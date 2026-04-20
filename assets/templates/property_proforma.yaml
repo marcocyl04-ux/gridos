@@ -1,0 +1,185 @@
+id: property_proforma
+name: Real Estate Pro Forma
+description: Property-level pro forma with NOI, cap rate, DSCR, and cash-on-cash return.
+category: real_estate
+author: GridOS
+version: "1.0.0"
+
+cells:
+  B2:
+    value: "Real Estate Pro Forma"
+    style: header
+
+  B4:
+    value: "Property Details"
+    style: header
+  B5:
+    value: "Purchase Price ($)"
+  C5:
+    value: 5000000
+  B6:
+    value: "Gross Square Feet"
+  C6:
+    value: 25000
+  B7:
+    value: "Units / Suites"
+  C7:
+    value: 20
+  B8:
+    value: "Vacancy Rate"
+  C8:
+    value: 0.05
+  B9:
+    value: "Annual Rent Growth"
+  C9:
+    value: 0.03
+
+  B11:
+    value: "Revenue"
+    style: header
+  B12:
+    value: "Gross Potential Rent ($/yr)"
+  C12:
+    value: 600000
+  B13:
+    value: "Less: Vacancy"
+  C13:
+    value: null
+    formula: "-C12*C8"
+  B14:
+    value: "Other Income (parking, laundry)"
+  C14:
+    value: 25000
+  B15:
+    value: "Effective Gross Income"
+  C15:
+    value: null
+    formula: "C12+C13+C14"
+
+  B17:
+    value: "Operating Expenses"
+    style: header
+  B18:
+    value: "Property Taxes"
+  C18:
+    value: 60000
+  B19:
+    value: "Insurance"
+  C19:
+    value: 15000
+  B20:
+    value: "Maintenance & Repairs"
+  C20:
+    value: 30000
+  B21:
+    value: "Management Fee"
+  C21:
+    value: null
+    formula: "C15*0.05"
+  B22:
+    value: "Utilities"
+  C22:
+    value: 20000
+  B23:
+    value: "Reserves (CapEx)"
+  C23:
+    value: 15000
+  B24:
+    value: "Total Operating Expenses"
+  C24:
+    value: null
+    formula: "SUM(C18:C23)"
+
+  B26:
+    value: "Net Operating Income"
+    style: header
+  B27:
+    value: "NOI"
+  C27:
+    value: null
+    formula: "C15-C24"
+  B28:
+    value: "Cap Rate"
+  C28:
+    value: null
+    formula: "C27/C5"
+
+  B30:
+    value: "Financing"
+    style: header
+  B31:
+    value: "Loan-to-Value (LTV)"
+  C31:
+    value: 0.75
+  B32:
+    value: "Loan Amount"
+  C32:
+    value: null
+    formula: "C5*C31"
+  B33:
+    value: "Interest Rate"
+  C33:
+    value: 0.065
+  B34:
+    value: "Loan Term (years)"
+  C34:
+    value: 30
+  B35:
+    value: "Monthly Payment"
+  C35:
+    value: null
+    formula: "C32*(C33/12)/(1-(1+C33/12)^(-C34*12))"
+  B36:
+    value: "Annual Debt Service"
+  C36:
+    value: null
+    formula: "C35*12"
+  B37:
+    value: "DSCR"
+  C37:
+    value: null
+    formula: "C27/C36"
+
+  B39:
+    value: "Returns"
+    style: header
+  B40:
+    value: "Cash Invested (Down Payment)"
+  C40:
+    value: null
+    formula: "C5*(1-C31)"
+  B41:
+    value: "Closing Costs (est. 3%)"
+  C41:
+    value: null
+    formula: "C5*0.03"
+  B42:
+    value: "Total Cash In"
+  C42:
+    value: null
+    formula: "C40+C41"
+  B43:
+    value: "Before-Tax Cash Flow"
+  C43:
+    value: null
+    formula: "C27-C36"
+  B44:
+    value: "Cash-on-Cash Return"
+  C44:
+    value: null
+    formula: "C43/C42"
+  B46:
+    value: "Year 2 NOI (est.)"
+  C46:
+    value: null
+    formula: "C27*(1+C9)"
+  B47:
+    value: "Implied Value (Year 2)"
+  C47:
+    value: null
+    formula: "C46/C28"
+  B48:
+    value: "Year 1 Appreciation"
+  C48:
+    value: null
+    formula: "C47-C5"

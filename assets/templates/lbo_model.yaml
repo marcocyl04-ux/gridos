@@ -1,0 +1,278 @@
+id: lbo_model
+name: LBO Model
+description: Leveraged buyout analysis with debt schedule, free cash flow sweep, and IRR/MOIC.
+category: valuation
+author: GridOS
+version: "1.0.0"
+
+cells:
+  B2:
+    value: "Leveraged Buyout (LBO) Model"
+    style: header
+
+  B4:
+    value: "Transaction Assumptions"
+    style: header
+  B5:
+    value: "Enterprise Value ($M)"
+  C5:
+    value: 1000
+  B6:
+    value: "Entry EBITDA ($M)"
+  C6:
+    value: 100
+  B7:
+    value: "Entry Multiple (EV/EBITDA)"
+  C7:
+    value: null
+    formula: "C5/C6"
+  B8:
+    value: "Senior Debt (60%)"
+  C8:
+    value: null
+    formula: "C5*0.60"
+  B9:
+    value: "Mezzanine Debt (15%)"
+  C9:
+    value: null
+    formula: "C5*0.15"
+  B10:
+    value: "Sponsor Equity (25%)"
+  C10:
+    value: null
+    formula: "C5*0.25"
+  B11:
+    value: "Total Sources"
+  C11:
+    value: null
+    formula: "C8+C9+C10"
+
+  B13:
+    value: "Debt Terms"
+    style: header
+  B14:
+    value: "Senior Rate"
+  C14:
+    value: 0.06
+  B15:
+    value: "Mezzanine Rate"
+  C15:
+    value: 0.12
+  B16:
+    value: "Senior Mandatory Amort (%/yr)"
+  C16:
+    value: 0.05
+  B17:
+    value: "Tax Rate"
+  C17:
+    value: 0.25
+  B18:
+    value: "EBITDA Growth"
+  C18:
+    value: 0.08
+  B19:
+    value: "CapEx (% of EBITDA)"
+  C19:
+    value: 0.15
+  B20:
+    value: "NWC Change ($M/yr)"
+  C20:
+    value: 2
+
+  B22:
+    value: "Projection"
+    style: header
+  B23:
+    value: ""
+  C23:
+    value: "Year 1"
+  D23:
+    value: "Year 2"
+  E23:
+    value: "Year 3"
+  F23:
+    value: "Year 4"
+  G23:
+    value: "Year 5"
+
+  B24:
+    value: "EBITDA"
+  C24:
+    value: null
+    formula: "C6*(1+C18)"
+  D24:
+    value: null
+    formula: "C24*(1+C18)"
+  E24:
+    value: null
+    formula: "D24*(1+C18)"
+  F24:
+    value: null
+    formula: "E24*(1+C18)"
+  G24:
+    value: null
+    formula: "F24*(1+C18)"
+
+  B25:
+    value: "Senior Debt (BOP)"
+  C25:
+    value: null
+    formula: "C8"
+  D25:
+    value: null
+    formula: "C25-C30"
+  E25:
+    value: null
+    formula: "D25-D30"
+  F25:
+    value: null
+    formula: "E25-E30"
+  G25:
+    value: null
+    formula: "F25-F30"
+
+  B26:
+    value: "Mezzanine Debt (BOP)"
+  C26:
+    value: null
+    formula: "C9"
+  D26:
+    value: null
+    formula: "C26"
+  E26:
+    value: null
+    formula: "D26"
+  F26:
+    value: null
+    formula: "E26"
+  G26:
+    value: null
+    formula: "F26"
+
+  B27:
+    value: "Interest (Senior)"
+  C27:
+    value: null
+    formula: "C25*C14"
+  D27:
+    value: null
+    formula: "D25*C14"
+  E27:
+    value: null
+    formula: "E25*C14"
+  F27:
+    value: null
+    formula: "F25*C14"
+  G27:
+    value: null
+    formula: "G25*C14"
+
+  B28:
+    value: "Interest (Mezz)"
+  C28:
+    value: null
+    formula: "C26*C15"
+  D28:
+    value: null
+    formula: "D26*C15"
+  E28:
+    value: null
+    formula: "E26*C15"
+  F28:
+    value: null
+    formula: "F26*C15"
+  G28:
+    value: null
+    formula: "G26*C15"
+
+  B29:
+    value: "CapEx"
+  C29:
+    value: null
+    formula: "-C24*C19"
+  D29:
+    value: null
+    formula: "-D24*C19"
+  E29:
+    value: null
+    formula: "-E24*C19"
+  F29:
+    value: null
+    formula: "-F24*C19"
+  G29:
+    value: null
+    formula: "-G24*C19"
+
+  B30:
+    value: "Mandatory Amort (Senior)"
+  C30:
+    value: null
+    formula: "C8*C16"
+  D30:
+    value: null
+    formula: "C8*C16"
+  E30:
+    value: null
+    formula: "C8*C16"
+  F30:
+    value: null
+    formula: "C8*C16"
+  G30:
+    value: null
+    formula: "C8*C16"
+
+  B31:
+    value: "FCF Before Sweep"
+  C31:
+    value: null
+    formula: "(C24-C27-C28)*(1-C17)+C29-C20"
+  D31:
+    value: null
+    formula: "(D24-D27-D28)*(1-C17)+D29-C20"
+  E31:
+    value: null
+    formula: "(E24-E27-E28)*(1-C17)+E29-C20"
+  F31:
+    value: null
+    formula: "(F24-F27-F28)*(1-C17)+F29-C20"
+  G31:
+    value: null
+    formula: "(G24-G27-G28)*(1-C17)+G29-C20"
+
+  B33:
+    value: "Exit Analysis"
+    style: header
+  B34:
+    value: "Exit Multiple"
+  C34:
+    value: 10
+  B35:
+    value: "Exit Enterprise Value"
+  C35:
+    value: null
+    formula: "G24*C34"
+  B36:
+    value: "Less: Senior Debt at Exit"
+  C36:
+    value: null
+    formula: "G25"
+  B37:
+    value: "Less: Mezz Debt at Exit"
+  C37:
+    value: null
+    formula: "G26"
+  B38:
+    value: "Equity Value at Exit"
+  C38:
+    value: null
+    formula: "C35-C36-C37"
+  B39:
+    value: "MOIC"
+  C39:
+    value: null
+    formula: "C38/C10"
+  B40:
+    value: "IRR"
+  C40:
+    value: null
+    formula: "(C38/C10)^(1/5)-1"

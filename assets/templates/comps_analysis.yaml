@@ -1,0 +1,193 @@
+id: comps_analysis
+name: Trading Comps Analysis
+description: Comparable company analysis with valuation multiples and implied ranges.
+category: valuation
+author: GridOS
+version: "1.0.0"
+
+cells:
+  B2:
+    value: "Comparable Company Analysis"
+    style: header
+
+  B4:
+    value: "Company"
+    style: header
+  C4:
+    value: "Ticker"
+  D4:
+    value: "EV ($M)"
+  E4:
+    value: "Revenue ($M)"
+  F4:
+    value: "EBITDA ($M)"
+  G4:
+    value: "Net Income ($M)"
+  H4:
+    value: "EV/Revenue"
+  I4:
+    value: "EV/EBITDA"
+  J4:
+    value: "P/E"
+
+  B5:
+    value: "Comp 1"
+  C5:
+    value: "AAPL"
+  D5:
+    value: 2800
+  E5:
+    value: 394
+  F5:
+    value: 130
+  G5:
+    value: 97
+  H5:
+    value: null
+    formula: "D5/E5"
+  I5:
+    value: null
+    formula: "D5/F5"
+  J5:
+    value: null
+    formula: "D5/G5"
+
+  B6:
+    value: "Comp 2"
+  C6:
+    value: "MSFT"
+  D6:
+    value: 2600
+  E6:
+    value: 212
+  F6:
+    value: 105
+  G6:
+    value: 72
+  H6:
+    value: null
+    formula: "D6/E6"
+  I6:
+    value: null
+    formula: "D6/F6"
+  J6:
+    value: null
+    formula: "D6/G6"
+
+  B7:
+    value: "Comp 3"
+  C7:
+    value: "GOOG"
+  D7:
+    value: 1700
+  E7:
+    value: 307
+  F7:
+    value: 100
+  G7:
+    value: 73
+  H7:
+    value: null
+    formula: "D7/E7"
+  I7:
+    value: null
+    formula: "D7/F7"
+  J7:
+    value: null
+    formula: "D7/G7"
+
+  B9:
+    value: "Statistics"
+    style: header
+  B10:
+    value: "Mean"
+  H10:
+    value: null
+    formula: "AVERAGE(H5:H7)"
+  I10:
+    value: null
+    formula: "AVERAGE(I5:I7)"
+  J10:
+    value: null
+    formula: "AVERAGE(J5:J7)"
+
+  B11:
+    value: "Median"
+  H11:
+    value: null
+    formula: "MEDIAN(H5:H7)"
+  I11:
+    value: null
+    formula: "MEDIAN(I5:I7)"
+  J11:
+    value: null
+    formula: "MEDIAN(J5:J7)"
+
+  B12:
+    value: "25th Percentile"
+  H12:
+    value: null
+    formula: "PERCENTILE(H5:H7,0.25)"
+  I12:
+    value: null
+    formula: "PERCENTILE(I5:I7,0.25)"
+  J12:
+    value: null
+    formula: "PERCENTILE(J5:J7,0.25)"
+
+  B13:
+    value: "75th Percentile"
+  H13:
+    value: null
+    formula: "PERCENTILE(H5:H7,0.75)"
+  I13:
+    value: null
+    formula: "PERCENTILE(I5:I7,0.75)"
+  J13:
+    value: null
+    formula: "PERCENTILE(J5:J7,0.75)"
+
+  B15:
+    value: "Subject Company"
+    style: header
+  B16:
+    value: "Revenue ($M)"
+  C16:
+    value: 500
+  B17:
+    value: "EBITDA ($M)"
+  C17:
+    value: 120
+  B18:
+    value: "Net Income ($M)"
+  C18:
+    value: 80
+
+  B20:
+    value: "Implied Valuation"
+    style: header
+  B21:
+    value: "EV/Revenue (Mean)"
+  C21:
+    value: null
+    formula: "C16*H10"
+  B22:
+    value: "EV/EBITDA (Mean)"
+  C22:
+    value: null
+    formula: "C17*I10"
+  B23:
+    value: "P/E (Mean)"
+  C23:
+    value: null
+    formula: "C18*J10"
+  B25:
+    value: "Implied Range — Low"
+  C25:
+    value: null
+    formula: "MIN(C21:C23)"
+  B26:
+    value: "Implied Range — High"
+  C26:
+    value: null
+    formula: "MAX(C21:C23)"

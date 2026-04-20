@@ -1,0 +1,117 @@
+id: bs_calculator
+name: Black-Scholes Option Pricer
+description: European option pricing using the Black-Scholes model with Greeks.
+category: trading
+author: GridOS
+version: "1.0.0"
+
+formulas:
+  =BLACK_SCHOLES:
+    description: Black-Scholes European option price
+    inputs:
+      - name: S
+        type: number
+        desc: Current stock price
+      - name: K
+        type: number
+        desc: Strike price
+      - name: T
+        type: number
+        desc: Time to expiration (years)
+      - name: r
+        type: number
+        desc: Risk-free interest rate
+      - name: sigma
+        type: number
+        desc: Volatility
+      - name: option_type
+        type: string
+        desc: "call or put"
+        default: call
+    output:
+      type: number
+    expression: >
+      (S * norm_cdf(d1) - K * exp(-r * T) * norm_cdf(d2))
+      if option_type == "call"
+      else (K * exp(-r * T) * norm_cdf(-d2) - S * norm_cdf(-d1))
+    where:
+      d1: "(ln(S / K) + (r + 0.5 * sigma ** 2) * T) / (sigma * sqrt(T))"
+      d2: "d1 - sigma * sqrt(T)"
+    category: trading
+
+cells:
+  B2:
+    value: "Black-Scholes Option Pricer"
+    style: header
+  B4:
+    value: "Stock Price (S)"
+  C4:
+    value: 100
+  B5:
+    value: "Strike Price (K)"
+  C5:
+    value: 105
+  B6:
+    value: "Time to Expiry (T, years)"
+  C6:
+    value: 0.5
+  B7:
+    value: "Risk-Free Rate (r)"
+  C7:
+    value: 0.05
+  B8:
+    value: "Volatility (σ)"
+  C8:
+    value: 0.20
+  B9:
+    value: "Option Type"
+  C9:
+    value: "call"
+
+  B11:
+    value: "Results"
+    style: header
+  B12:
+    value: "d1"
+  C12:
+    value: null
+    formula: "(LN(C4/C5) + (C7 + 0.5*C8^2)*C6) / (C8*SQRT(C6))"
+  B13:
+    value: "d2"
+  C13:
+    value: null
+    formula: "C12 - C8*SQRT(C6)"
+  B14:
+    value: "Call Price"
+  C14:
+    value: null
+    formula: "C4*NORMDIST(C12,0,1,TRUE) - C5*EXP(-C7*C6)*NORMDIST(C13,0,1,TRUE)"
+  B15:
+    value: "Put Price"
+  C15:
+    value: null
+    formula: "C5*EXP(-C7*C6)*NORMDIST(-C13,0,1,TRUE) - C4*NORMDIST(-C12,0,1,TRUE)"
+
+  B17:
+    value: "Greeks"
+    style: header
+  B18:
+    value: "Delta (Call)"
+  C18:
+    value: null
+    formula: "NORMDIST(C12,0,1,TRUE)"
+  B19:
+    value: "Gamma"
+  C19:
+    value: null
+    formula: "EXP(-C12^2/2)/(SQRT(2*PI())*C4*C8*SQRT(C6))"
+  B20:
+    value: "Vega"
+  C20:
+    value: null
+    formula: "C4*SQRT(C6)*EXP(-C12^2/2)/SQRT(2*PI())"
+  B21:
+    value: "Theta (Call)"
+  C21:
+    value: null
+    formula: "(-C4*C8*EXP(-C12^2/2)/(2*SQRT(2*PI()*C6)) - C7*C5*EXP(-C7*C6)*NORMDIST(C13,0,1,TRUE))/365"

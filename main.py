@@ -53,6 +53,7 @@ MAX_CHAIN_ITERATIONS = 10
 
 DATA_DIR = Path("data")
 TEMPLATES_DIR = DATA_DIR / "templates"
+ASSETS_TEMPLATES_DIR = Path("assets") / "templates"  # Deployed YAML templates
 MACROS_PATH = DATA_DIR / "user_macros.json"
 HERO_TOOLS_PATH = DATA_DIR / "hero_tools.json"
 API_KEYS_PATH = DATA_DIR / "api_keys.json"
@@ -174,7 +175,7 @@ for _da_id, _da_spec in DECLARATIVE_LOADER.agent_registry.items():
             "category": _da_spec.category,
         }
 
-# Load YAML templates from data/templates/*.yaml
+# Load YAML templates from data/templates/*.yaml and assets/templates/*.yaml
 _YAML_TEMPLATES: dict[str, dict] = {}
 if TEMPLATES_DIR.exists():
     import yaml as _yaml
@@ -185,6 +186,21 @@ if TEMPLATES_DIR.exists():
             if _data and "id" in _data:
                 _YAML_TEMPLATES[_data["id"]] = _data
                 print(f"[declarative] YAML template: {_data['id']} ({_data.get('name', '')})")
+        except Exception as _e:
+            print(f"[declarative] Failed to load YAML template {_yt.name}: {_e}")
+
+# Also load from assets/templates/ (for deployed version where data/ is gitignored)
+if ASSETS_TEMPLATES_DIR.exists():
+    import yaml as _yaml
+    for _yt in ASSETS_TEMPLATES_DIR.glob("*.yaml"):
+        try:
+            with open(_yt) as _f:
+                _data = _yaml.safe_load(_f)
+            if _data and "id" in _data:
+                # Only add if not already loaded (data/ takes precedence for local dev)
+                if _data["id"] not in _YAML_TEMPLATES:
+                    _YAML_TEMPLATES[_data["id"]] = _data
+                    print(f"[declarative] YAML template (assets): {_data['id']} ({_data.get('name', '')})")
         except Exception as _e:
             print(f"[declarative] Failed to load YAML template {_yt.name}: {_e}")
 

@@ -1,0 +1,311 @@
+id: dcf_valuation
+name: DCF Valuation
+description: 5-year discounted cash flow with terminal value, WACC, and enterprise/equity value bridge.
+category: valuation
+author: GridOS
+version: "1.0.0"
+
+cells:
+  B2:
+    value: "DCF Valuation Model"
+    style: header
+
+  B4:
+    value: "Assumptions"
+    style: header
+  B5:
+    value: "Revenue ($M)"
+  C5:
+    value: 500
+  B6:
+    value: "Revenue Growth (Y1)"
+  C6:
+    value: 0.15
+  B7:
+    value: "Growth Decay (per year)"
+  C7:
+    value: 0.02
+  B8:
+    value: "EBITDA Margin"
+  C8:
+    value: 0.25
+  B9:
+    value: "D&A (% of Revenue)"
+  C9:
+    value: 0.03
+  B10:
+    value: "CapEx (% of Revenue)"
+  C10:
+    value: 0.05
+  B11:
+    value: "NWC Change (% of Rev Δ)"
+  C11:
+    value: 0.10
+  B12:
+    value: "Tax Rate"
+  C12:
+    value: 0.25
+  B13:
+    value: "WACC"
+  C13:
+    value: 0.10
+  B14:
+    value: "Terminal Growth"
+  C14:
+    value: 0.03
+
+  B16:
+    value: "Projection"
+    style: header
+  B17:
+    value: ""
+  C17:
+    value: "Year 1"
+  D17:
+    value: "Year 2"
+  E17:
+    value: "Year 3"
+  F17:
+    value: "Year 4"
+  G17:
+    value: "Year 5"
+
+  B18:
+    value: "Revenue"
+  C18:
+    value: null
+    formula: "C5*(1+C6)"
+  D18:
+    value: null
+    formula: "C18*(1+C6-C7)"
+  E18:
+    value: null
+    formula: "D18*(1+C6-2*C7)"
+  F18:
+    value: null
+    formula: "E18*(1+C6-3*C7)"
+  G18:
+    value: null
+    formula: "F18*(1+C6-4*C7)"
+
+  B19:
+    value: "EBITDA"
+  C19:
+    value: null
+    formula: "C18*C8"
+  D19:
+    value: null
+    formula: "D18*C8"
+  E19:
+    value: null
+    formula: "E18*C8"
+  F19:
+    value: null
+    formula: "F18*C8"
+  G19:
+    value: null
+    formula: "G18*C8"
+
+  B20:
+    value: "D&A"
+  C20:
+    value: null
+    formula: "C18*C9"
+  D20:
+    value: null
+    formula: "D18*C9"
+  E20:
+    value: null
+    formula: "E18*C9"
+  F20:
+    value: null
+    formula: "F18*C9"
+  G20:
+    value: null
+    formula: "G18*C9"
+
+  B21:
+    value: "EBIT"
+  C21:
+    value: null
+    formula: "C19-C20"
+  D21:
+    value: null
+    formula: "D19-D20"
+  E21:
+    value: null
+    formula: "E19-E20"
+  F21:
+    value: null
+    formula: "F19-F20"
+  G21:
+    value: null
+    formula: "G19-G20"
+
+  B22:
+    value: "Taxes"
+  C22:
+    value: null
+    formula: "C21*C12"
+  D22:
+    value: null
+    formula: "D21*C12"
+  E22:
+    value: null
+    formula: "E21*C12"
+  F22:
+    value: null
+    formula: "F21*C12"
+  G22:
+    value: null
+    formula: "G21*C12"
+
+  B23:
+    value: "NOPAT"
+  C23:
+    value: null
+    formula: "C21-C22"
+  D23:
+    value: null
+    formula: "D21-D22"
+  E23:
+    value: null
+    formula: "E21-E22"
+  F23:
+    value: null
+    formula: "F21-F22"
+  G23:
+    value: null
+    formula: "G21-G22"
+
+  B24:
+    value: "CapEx"
+  C24:
+    value: null
+    formula: "-C18*C10"
+  D24:
+    value: null
+    formula: "-D18*C10"
+  E24:
+    value: null
+    formula: "-E18*C10"
+  F24:
+    value: null
+    formula: "-F18*C10"
+  G24:
+    value: null
+    formula: "-G18*C10"
+
+  B25:
+    value: "ΔNWC"
+  C25:
+    value: null
+    formula: "-(C18-C5)*C11"
+  D25:
+    value: null
+    formula: "-(D18-C18)*C11"
+  E25:
+    value: null
+    formula: "-(E18-D18)*C11"
+  F25:
+    value: null
+    formula: "-(F18-E18)*C11"
+  G25:
+    value: null
+    formula: "-(G18-F18)*C11"
+
+  B26:
+    value: "D&A Add-back"
+  C26:
+    value: null
+    formula: "C20"
+  D26:
+    value: null
+    formula: "D20"
+  E26:
+    value: null
+    formula: "E20"
+  F26:
+    value: null
+    formula: "F20"
+  G26:
+    value: null
+    formula: "G20"
+
+  B28:
+    value: "Free Cash Flow"
+    style: header
+  C28:
+    value: null
+    formula: "C23+C24+C25+C26"
+  D28:
+    value: null
+    formula: "D23+D24+D25+D26"
+  E28:
+    value: null
+    formula: "E23+E24+E25+E26"
+  F28:
+    value: null
+    formula: "F23+F24+F25+F26"
+  G28:
+    value: null
+    formula: "G23+G24+G25+G26"
+
+  B30:
+    value: "Valuation"
+    style: header
+  B31:
+    value: "Terminal Value"
+  C31:
+    value: null
+    formula: "G28*(1+C14)/(C13-C14)"
+  B32:
+    value: "Discount Factor Y1"
+  C32:
+    value: null
+    formula: "1/(1+C13)^1"
+  B33:
+    value: "Discount Factor Y2"
+  C33:
+    value: null
+    formula: "1/(1+C13)^2"
+  B34:
+    value: "Discount Factor Y3"
+  C34:
+    value: null
+    formula: "1/(1+C13)^3"
+  B35:
+    value: "Discount Factor Y4"
+  C35:
+    value: null
+    formula: "1/(1+C13)^4"
+  B36:
+    value: "Discount Factor Y5"
+  C36:
+    value: null
+    formula: "1/(1+C13)^5"
+
+  B38:
+    value: "PV of FCFs"
+  C38:
+    value: null
+    formula: "C28*C32+D28*C33+E28*C34+F28*C35+G28*C36"
+  B39:
+    value: "PV of Terminal Value"
+  C39:
+    value: null
+    formula: "C31*C36"
+  B40:
+    value: "Enterprise Value ($M)"
+  C40:
+    value: null
+    formula: "C38+C39"
+  B42:
+    value: "Less: Net Debt ($M)"
+  C42:
+    value: 50
+  B43:
+    value: "Equity Value ($M)"
+  C43:
+    value: null
+    formula: "C40-C42"

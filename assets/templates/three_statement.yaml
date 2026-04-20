@@ -1,0 +1,504 @@
+id: three_statement
+name: Three-Statement Financial Model
+description: Integrated income statement, balance sheet, and cash flow statement with 5-year projections.
+category: valuation
+author: GridOS
+version: "1.0.0"
+
+cells:
+  B2:
+    value: "Three-Statement Financial Model"
+    style: header
+
+  B4:
+    value: "Key Assumptions"
+    style: header
+  B5:
+    value: "Revenue ($M)"
+  C5:
+    value: 500
+  B6:
+    value: "Revenue Growth"
+  C6:
+    value: 0.12
+  B7:
+    value: "COGS (% of Rev)"
+  C7:
+    value: 0.40
+  B8:
+    value: "SG&A (% of Rev)"
+  C8:
+    value: 0.20
+  B9:
+    value: "D&A (% of Rev)"
+  C9:
+    value: 0.03
+  B10:
+    value: "Tax Rate"
+  C10:
+    value: 0.25
+  B11:
+    value: "CapEx (% of Rev)"
+  C11:
+    value: 0.05
+  B12:
+    value: "AR Days"
+  C12:
+    value: 35
+  B13:
+    value: "AP Days"
+  C13:
+    value: 30
+  B14:
+    value: "Inventory Days"
+  C14:
+    value: 45
+  B15:
+    value: "Debt ($M)"
+  C15:
+    value: 100
+  B16:
+    value: "Interest Rate"
+  C16:
+    value: 0.06
+
+  B18:
+    value: "Year Headers"
+    style: header
+  B19:
+    value: ""
+  C19:
+    value: "Base"
+  D19:
+    value: "Year 1"
+  E19:
+    value: "Year 2"
+  F19:
+    value: "Year 3"
+  G19:
+    value: "Year 4"
+  H19:
+    value: "Year 5"
+
+  B21:
+    value: "INCOME STATEMENT"
+    style: header
+  B22:
+    value: "Revenue"
+  C22:
+    value: null
+    formula: "C5"
+  D22:
+    value: null
+    formula: "C22*(1+C6)"
+  E22:
+    value: null
+    formula: "D22*(1+C6)"
+  F22:
+    value: null
+    formula: "E22*(1+C6)"
+  G22:
+    value: null
+    formula: "F22*(1+C6)"
+  H22:
+    value: null
+    formula: "G22*(1+C6)"
+
+  B23:
+    value: "COGS"
+  C23:
+    value: null
+    formula: "-C22*C7"
+  D23:
+    value: null
+    formula: "-D22*C7"
+  E23:
+    value: null
+    formula: "-E22*C7"
+  F23:
+    value: null
+    formula: "-F22*C7"
+  G23:
+    value: null
+    formula: "-G22*C7"
+  H23:
+    value: null
+    formula: "-H22*C7"
+
+  B24:
+    value: "Gross Profit"
+  C24:
+    value: null
+    formula: "C22+C23"
+  D24:
+    value: null
+    formula: "D22+D23"
+  E24:
+    value: null
+    formula: "E22+E23"
+  F24:
+    value: null
+    formula: "F22+F23"
+  G24:
+    value: null
+    formula: "G22+G23"
+  H24:
+    value: null
+    formula: "H22+H23"
+
+  B25:
+    value: "SG&A"
+  C25:
+    value: null
+    formula: "-C22*C8"
+  D25:
+    value: null
+    formula: "-D22*C8"
+  E25:
+    value: null
+    formula: "-E22*C8"
+  F25:
+    value: null
+    formula: "-F22*C8"
+  G25:
+    value: null
+    formula: "-G22*C8"
+  H25:
+    value: null
+    formula: "-H22*C8"
+
+  B26:
+    value: "D&A"
+  C26:
+    value: null
+    formula: "-C22*C9"
+  D26:
+    value: null
+    formula: "-D22*C9"
+  E26:
+    value: null
+    formula: "-E22*C9"
+  F26:
+    value: null
+    formula: "-F22*C9"
+  G26:
+    value: null
+    formula: "-G22*C9"
+  H26:
+    value: null
+    formula: "-H22*C9"
+
+  B27:
+    value: "EBIT"
+  C27:
+    value: null
+    formula: "C24+C25+C26"
+  D27:
+    value: null
+    formula: "D24+D25+D26"
+  E27:
+    value: null
+    formula: "E24+E25+E26"
+  F27:
+    value: null
+    formula: "F24+F25+F26"
+  G27:
+    value: null
+    formula: "G24+G25+G26"
+  H27:
+    value: null
+    formula: "H24+H25+H26"
+
+  B28:
+    value: "Interest Expense"
+  C28:
+    value: null
+    formula: "-C15*C16"
+  D28:
+    value: null
+    formula: "-C15*C16"
+  E28:
+    value: null
+    formula: "-C15*C16"
+  F28:
+    value: null
+    formula: "-C15*C16"
+  G28:
+    value: null
+    formula: "-C15*C16"
+  H28:
+    value: null
+    formula: "-C15*C16"
+
+  B29:
+    value: "Pre-Tax Income"
+  C29:
+    value: null
+    formula: "C27+C28"
+  D29:
+    value: null
+    formula: "D27+D28"
+  E29:
+    value: null
+    formula: "E27+E28"
+  F29:
+    value: null
+    formula: "F27+F28"
+  G29:
+    value: null
+    formula: "G27+G28"
+  H29:
+    value: null
+    formula: "H27+H28"
+
+  B30:
+    value: "Taxes"
+  C30:
+    value: null
+    formula: "IF(C29>0,-C29*C10,0)"
+  D30:
+    value: null
+    formula: "IF(D29>0,-D29*C10,0)"
+  E30:
+    value: null
+    formula: "IF(E29>0,-E29*C10,0)"
+  F30:
+    value: null
+    formula: "IF(F29>0,-F29*C10,0)"
+  G30:
+    value: null
+    formula: "IF(G29>0,-G29*C10,0)"
+  H30:
+    value: null
+    formula: "IF(H29>0,-H29*C10,0)"
+
+  B31:
+    value: "Net Income"
+  C31:
+    value: null
+    formula: "C29+C30"
+  D31:
+    value: null
+    formula: "D29+D30"
+  E31:
+    value: null
+    formula: "E29+E30"
+  F31:
+    value: null
+    formula: "F29+F30"
+  G31:
+    value: null
+    formula: "G29+G30"
+  H31:
+    value: null
+    formula: "H29+H30"
+
+  B33:
+    value: "BALANCE SHEET (Working Capital)"
+    style: header
+  B34:
+    value: "Accounts Receivable"
+  C34:
+    value: null
+    formula: "C22*C12/365"
+  D34:
+    value: null
+    formula: "D22*C12/365"
+  E34:
+    value: null
+    formula: "E22*C12/365"
+  F34:
+    value: null
+    formula: "F22*C12/365"
+  G34:
+    value: null
+    formula: "G22*C12/365"
+  H34:
+    value: null
+    formula: "H22*C12/365"
+
+  B35:
+    value: "Inventory"
+  C35:
+    value: null
+    formula: "ABS(C23)*C14/365"
+  D35:
+    value: null
+    formula: "ABS(D23)*C14/365"
+  E35:
+    value: null
+    formula: "ABS(E23)*C14/365"
+  F35:
+    value: null
+    formula: "ABS(F23)*C14/365"
+  G35:
+    value: null
+    formula: "ABS(G23)*C14/365"
+  H35:
+    value: null
+    formula: "ABS(H23)*C14/365"
+
+  B36:
+    value: "Accounts Payable"
+  C36:
+    value: null
+    formula: "ABS(C23)*C13/365"
+  D36:
+    value: null
+    formula: "ABS(D23)*C13/365"
+  E36:
+    value: null
+    formula: "ABS(E23)*C13/365"
+  F36:
+    value: null
+    formula: "ABS(F23)*C13/365"
+  G36:
+    value: null
+    formula: "ABS(G23)*C13/365"
+  H36:
+    value: null
+    formula: "ABS(H23)*C13/365"
+
+  B37:
+    value: "Net Working Capital"
+  C37:
+    value: null
+    formula: "C34+C35-C36"
+  D37:
+    value: null
+    formula: "D34+D35-D36"
+  E37:
+    value: null
+    formula: "E34+E35-E36"
+  F37:
+    value: null
+    formula: "F34+F35-F36"
+  G37:
+    value: null
+    formula: "G34+G35-G36"
+  H37:
+    value: null
+    formula: "H34+H35-H36"
+
+  B38:
+    value: "Δ NWC"
+  D38:
+    value: null
+    formula: "-(D37-C37)"
+  E38:
+    value: null
+    formula: "-(E37-D37)"
+  F38:
+    value: null
+    formula: "-(F37-E37)"
+  G38:
+    value: null
+    formula: "-(G37-F37)"
+  H38:
+    value: null
+    formula: "-(H37-G37)"
+
+  B40:
+    value: "CASH FLOW STATEMENT"
+    style: header
+  B41:
+    value: "Net Income"
+  C41:
+    value: null
+    formula: "C31"
+  D41:
+    value: null
+    formula: "D31"
+  E41:
+    value: null
+    formula: "E31"
+  F41:
+    value: null
+    formula: "F31"
+  G41:
+    value: null
+    formula: "G31"
+  H41:
+    value: null
+    formula: "H31"
+
+  B42:
+    value: "D&A Add-back"
+  C42:
+    value: null
+    formula: "-C26"
+  D42:
+    value: null
+    formula: "-D26"
+  E42:
+    value: null
+    formula: "-E26"
+  F42:
+    value: null
+    formula: "-F26"
+  G42:
+    value: null
+    formula: "-G26"
+  H42:
+    value: null
+    formula: "-H26"
+
+  B43:
+    value: "Δ Working Capital"
+  D43:
+    value: null
+    formula: "D38"
+  E43:
+    value: null
+    formula: "E38"
+  F43:
+    value: null
+    formula: "F38"
+  G43:
+    value: null
+    formula: "G38"
+  H43:
+    value: null
+    formula: "H38"
+
+  B44:
+    value: "CapEx"
+  C44:
+    value: null
+    formula: "-C22*C11"
+  D44:
+    value: null
+    formula: "-D22*C11"
+  E44:
+    value: null
+    formula: "-E22*C11"
+  F44:
+    value: null
+    formula: "-F22*C11"
+  G44:
+    value: null
+    formula: "-G22*C11"
+  H44:
+    value: null
+    formula: "-H22*C11"
+
+  B45:
+    value: "Free Cash Flow"
+  C45:
+    value: null
+    formula: "C41+C42+C43+C44"
+  D45:
+    value: null
+    formula: "D41+D42+D43+D44"
+  E45:
+    value: null
+    formula: "E41+E42+E43+E44"
+  F45:
+    value: null
+    formula: "F41+F42+F43+F44"
+  G45:
+    value: null
+    formula: "G41+G42+G43+G44"
+  H45:
+    value: null
+    formula: "H41+H42+H43+H44"
