@@ -35,7 +35,7 @@ from core.providers import (
     get_model_entry,
 )
 from core.utils import a1_to_coords
-from core.node_graph import NodeGraph, Coordinator, Executor, Node, NodeType
+from core.node_graph import NodeGraph, Coordinator, Executor, Node, NodeType, TypedInterface
 from core.intent_parser import IntentParser, validate_with_feedback
 from core.declarative_plugins import (
     DeclarativePluginLoader,
