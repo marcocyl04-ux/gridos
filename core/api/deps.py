@@ -42,8 +42,6 @@ from core.providers import (
     get_model_entry,
 )
 from core.utils import a1_to_coords
-from core.node_graph import NodeGraph, Coordinator, Executor, Node, NodeType, TypedInterface
-from core.intent_parser import IntentParser, validate_with_feedback
 from core.declarative_plugins import (
     DeclarativePluginLoader,
     install_declarative_formulas,
@@ -51,7 +49,6 @@ from core.declarative_plugins import (
     DEFAULT_MATH_REGISTRY,
 )
 from core.import_engine import import_file, auto_detect_template
-from core.industry_profiles import detect_industry, get_template_instructions
 
 
 load_dotenv()
@@ -114,7 +111,7 @@ async def _security_middleware(request, call_next):
     # --- CSRF protection (double-submit cookie) ---
     if request.method not in _SAFE_METHODS:
         path = request.url.path
-        exempt_prefixes = ("/agent/chat", "/agent/apply", "/agent/write", "/agent/execute-graph")
+        exempt_prefixes = ("/agent/chat", "/agent/apply", "/agent/write")
         is_exempt = any(path.startswith(p) for p in exempt_prefixes)
         has_auth = bool(request.headers.get("authorization", "").startswith("Bearer"))
         if not is_exempt and not has_auth:
@@ -697,12 +694,6 @@ class CellFormatRequest(BaseModel):
     decimals: Optional[int] = None
     sheet: Optional[str] = None
 
-
-class NodeGraphRequest(BaseModel):
-    """Execute via typed node graph (advanced agent workflows)."""
-    llm_response: Dict[str, Any]
-    prompt: str = ""
-    agent_id: str = "general"
 
 
 class ChartCreateRequest(BaseModel):

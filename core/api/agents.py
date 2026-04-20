@@ -1,25 +1,20 @@
 """
 GridOS API — Agent endpoints.
 
-Handles: /agent/chat, /agent/apply, /agent/chat/chain, /agent/write,
-/agent/write/graph, /agent/execute-graph
+Handles: /agent/chat, /agent/apply, /agent/chat/chain, /agent/write
 """
 
 import json
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 
 from core.engine import GridOSKernel
 from core.models import AgentIntent, WriteResponse
-from core.node_graph import NodeGraph, Coordinator, Executor, Node, NodeType, TypedInterface
-from core.intent_parser import IntentParser, validate_with_feedback
 
 from .deps import (
     _classify_model_error,
-    _current_kernel,
-    _default_kernel,
     _is_completion_signal,
     _normalize_multi_intents,
     _observe_written_cells,
@@ -30,11 +25,9 @@ from .deps import (
     kernel,
     AuthUser,
     require_user,
-    optional_user,
     ChainRequest,
     ChatRequest,
     PreviewApplyRequest,
-    NodeGraphRequest,
     MAX_CHAIN_ITERATIONS,
 )
 
@@ -395,118 +388,3 @@ async def agent_write(
             message=str(e),
         )
 
-
-@router.post("/agent/write/graph", response_model=WriteResponse)
-async def agent_write_graph(
-    req: NodeGraphRequest,
-    k: GridOSKernel = Depends(current_kernel_dep),
-):
-    try:
-        parser = IntentParser(agent_id=req.agent_id)
-        graph = parser.parse(req.llm_response, prompt=req.prompt)
-        is_valid, errors = validate_with_feedback(graph, Coordinator(kernel))
-        if not is_valid:
-            print(f"[graph] validation errors: {errors}")
-            intents = parser.to_agent_intents(graph)
-            if intents:
-                requested_a1, actual_a1 = kernel.process_agent_intent(intents[0])
-                return WriteResponse(
-                    status="Fallback",
-                    original_target=requested_a1,
-                    actual_target=actual_a1,
-                    message=f"Wrote via fallback at {actual_a1}",
-                )
-        nullified = graph.propagate_nulls()
-        intents = parser.to_agent_intents(graph)
-        if not intents:
-            return WriteResponse(
-                status="No-op",
-                original_target="N/A",
-                actual_target="N/A",
-                message="Graph produced no write intents",
-            )
-        first_actual = None
-        for intent in intents:
-            requested_a1, actual_a1 = kernel.process_agent_intent(intent)
-            if first_actual is None:
-                first_actual = actual_a1
-        audit_log = graph.to_audit_log()
-        return WriteResponse(
-            status="Success",
-            original_target=intents[0].target_start_a1 if intents else "N/A",
-            actual_target=first_actual or "N/A",
-            message=f"Wrote {len(intents)} intents via graph",
-        )
-    except Exception as e:
-        return WriteResponse(
-            status="Error",
-            original_target="N/A",
-            actual_target="N/A",
-            message=f"Node graph failed: {str(e)}",
-        )
-
-
-@router.post("/agent/execute-graph")
-async def agent_execute_graph(
-    request: Request,
-    body: dict = Body(...),
-    _user: Optional[AuthUser] = Depends(optional_user),
-):
-    k = _current_kernel.get()
-    if k is None:
-        k = _default_kernel
-
-    graph_data = body.get("graph", body)
-    nodes_data = graph_data.get("nodes", [])
-
-    if not nodes_data:
-        return {
-            "success": False,
-            "error": "No nodes provided in graph",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
-
-    try:
-        graph = NodeGraph()
-        for node_data in nodes_data:
-            node_id = node_data.get("id", f"node_{len(graph.nodes)}")
-            node_type_str = node_data.get("type", "QUERY")
-            node_type = NodeType[node_type_str.upper()] if hasattr(NodeType, node_type_str.upper()) else NodeType.QUERY
-            node = Node(
-                id=node_id,
-                node_type=node_type,
-                interface=TypedInterface(inputs={}, outputs={}),
-                inputs=node_data.get("inputs", {}),
-                outputs={}
-            )
-            graph.add_node(node)
-
-        coordinator = Coordinator(kernel=k)
-        executor = Executor(formula_registry={})
-
-        try:
-            execution_order = coordinator.plan_execution(graph)
-        except ValueError as e:
-            return {
-                "success": False,
-                "error": f"Graph validation failed: {str(e)}",
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-            }
-
-        result = await executor.execute(execution_order)
-
-        return {
-            "success": True,
-            "result": result,
-            "executed_nodes": len(result.get("executed", [])),
-            "failed_nodes": len(result.get("failed", [])),
-            "skipped_nodes": len(result.get("skipped", [])),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
-    except Exception as e:
-        return {
-            "success": False,
-            "error": str(e),
-            "error_type": type(e).__name__,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }

@@ -1,227 +1,96 @@
-# GridOS AI Developer Guide
+# GridOS — AI Contributor Guide
 
-This guide helps AI agents understand and work with the GridOS codebase effectively.
+## 1. What GridOS Is
 
-## Quick Navigation
+GridOS is an agentic spreadsheet: a deterministic Python kernel manages cell state while an LLM interprets natural-language prompts and proposes structured write-intents. The kernel previews, collision-checks, and applies those intents so the AI can edit the sheet without clobbering locked or occupied cells.
+
+## 2. Repo Map
 
 ```
-/tmp/gridos-rebuild/
-├── main.py                 # FastAPI app, all HTTP routes
-├── core/
-│   ├── node_graph.py       # Node graph system (NodeGraph, Node, NodeType)
-│   ├── intent_parser.py    # Parses LLM output to node graphs
-│   ├── declarative_plugins.py  # YAML templates, formulas
-│   ├── engine.py           # GridOSKernel (grid operations)
-│   ├── providers.py        # LLM provider abstractions
-│   └── models.py           # Pydantic models
-├── static/
-│   ├── index.html          # Main workbook UI (SD's original)
-│   ├── app.js              # Frontend logic
-│   └── dev/                # DevTools interface (NEW)
-│       ├── index.html
-│       └── dev.js
-└── assets/templates/       # YAML financial templates
+main.py                  FastAPI entrypoint — mounts route modules, serves static pages
+core/                    Kernel and API layer
+  engine.py              GridOSKernel: cell state, recalculation, lock enforcement
+  models.py              Pydantic schemas (AgentIntent, WriteResponse)
+  functions.py           Formula registry (SUM, MAX, IF, …)
+  macros.py              User-authored macros on top of primitives
+  utils.py               A1-notation ↔ (row, col) conversion
+  plugins.py             Plugin loader; PluginKernel facade (@kernel.formula, .agent, .model)
+  declarative_plugins.py YAML template rendering and declarative formula registry
+  import_engine.py       CSV/Excel import (reserved for upcoming feature)
+  workbook_store.py      Persistence: FileWorkbookStore (OSS) / SupabaseWorkbookStore (SaaS)
+  api/
+    agents.py            /agent/chat, /agent/apply, /agent/write, /agent/chat/chain
+    deps.py              Shared state: kernel pool, providers, macros, middleware, call_model()
+    grid.py              /grid/cell read/write, sheet CRUD
+    templates.py         /templates/apply/{id}
+    workbooks.py         Save/load workbook state
+    charts.py            Chart creation
+    settings.py          /settings/providers, /settings/keys/*
+    tools.py             /tools (hero tools)
+    auth_usage.py        Auth middleware, /cloud/status, usage tracking
+core/providers/          LLM provider abstraction
+  base.py                Provider interface, error classifiers
+  catalog.py             Static model catalog + fallback rules
+  gemini.py / anthropic.py / groq.py / openrouter.py  Concrete providers
+agents/                  Agent JSON configs (finance.json, general.json)
+plugins/                 Drop-in extension packages (hello_world, black_scholes, real_estate)
+cloud/                   SaaS tier (dormant unless SAAS_MODE=true): auth, storage, quotas
+static/                  Frontend (vanilla JS + Tailwind)
+  landing.html           Start-a-workbook page
+  index.html             Main workbook UI
+  app.js                 Workbook interactivity
+  login.html / login.js  Auth pages (SaaS)
+  dashboard.html         Workbook picker (SaaS)
+data/                    YAML templates, persisted state
+test_*.py                Offline tests (no server, no API calls)
 ```
 
-## Key Endpoints for AI Manipulation
+## 3. Request Flow — Chat to Sheet
 
-### Agent Chat
-```
-POST /agent/chat
-{
-  "workbook_id": "uuid",
-  "agent_id": "default",
-  "message": "Calculate DCF for Apple with 5% growth"
-}
-```
+A typical cycle from user prompt to applied values:
 
-### Execute Node Graph
-```
-POST /agent/execute-graph
-{
-  "nodes": [
-    {
-      "id": "n1",
-      "node_type": "QUERY",
-      "interface": { "inputs": {}, "outputs": {} },
-      "inputs": { "range": "A1:A10" }
-    }
-  ],
-  "connections": []
-}
-```
+1. **Landing page** (`static/landing.html`) → user describes what to build → POST to `/agent/chat`.
+2. **`/agent/chat`** handler in `core/api/agents.py` → calls `generate_agent_preview(req)`.
+3. **`generate_agent_preview()`** in `core/api/deps.py` (line ~1201):
+   - Reads grid context via `kernel.get_context_for_ai()`.
+   - Routes the prompt through `route_prompt()` to pick an agent (finance or general).
+   - Builds a system instruction via `build_system_instruction()`.
+   - Calls `call_model()` (line ~549) which resolves the model, calls the provider, and returns the response.
+   - Parses the JSON response with `_parse_ai_response()`.
+   - Creates an `AgentIntent` and calls `kernel.preview_agent_intent()` (in `core/engine.py`, line ~420) to generate a preview with collision detection.
+   - Returns the preview (target cell, proposed values, any chart spec or macro proposal).
+4. **Frontend** (`static/app.js`) renders the preview. User clicks Apply.
+5. **`/agent/apply`** handler in `core/api/agents.py` → calls `kernel.process_agent_intent()` (in `core/engine.py`, line ~406) which writes values, recalculates formulas, and resolves collisions.
+6. **`/agent/write`** is a direct-write path (no LLM) — same `kernel.process_agent_intent()` call.
 
-### Apply Template
-```
-POST /templates/apply/{template_id}
-{
-  "variables": {
-    "company_name": "Acme Corp",
-    "growth_rate": 0.05
-  }
-}
-```
+## 4. Extension Seams
 
-## Node Types
+Three ways to extend GridOS, all via `plugins/`:
 
-| Type | Purpose | Color (UI) |
-|------|---------|------------|
-| `CELL_WRITE` | Write to single cell | Green |
-| `RANGE_WRITE` | Write to range | Green |
-| `FORMULA` | Compute formula | Orange |
-| `CONDITIONAL` | If/then branch | Purple |
-| `AGGREGATE` | SUM, AVG, etc | Orange |
-| `QUERY` | Read from grid | Blue |
-| `GROUP` | Container nodes | Gray |
+- **Formula** — `@kernel.formula("MY_FUNC")` on a Python callable registers a new spreadsheet function. See `plugins/README.md`.
+- **Agent** — `kernel.agent({...})` registers a specialist agent with its own system prompt and JSON schema. See `plugins/README.md`.
+- **Model** — `kernel.model({...})` adds an entry to the model catalog from a plugin. See `plugins/README.md`.
 
-## Node Graph System
+Plugins are auto-loaded on boot from `plugins/*/plugin.py` with `manifest.json` metadata.
 
-Nodes are typed with explicit interfaces:
+## 5. Shared State
 
-```python
-from core.node_graph import NodeGraph, Node, NodeType, TypedInterface, TypeSchema
+All shared state lives in `core/api/deps.py`:
 
-# Create a graph
-graph = NodeGraph()
+- **`kernel`** — `GridOSKernel` instance (or kernel pool in SaaS mode via `_kernel_for_scope()` and `ContextVar`). Holds cell state, formulas, locks, sheets.
+- **`AGENTS`** — dict of agent configs loaded from `agents/*.json`. Keyed by agent id (e.g. `"finance"`, `"general"`).
+- **`providers`** — dict of `Provider` instances, rebuilt when API keys change. See `_rebuild_providers()`.
+- **`PLUGIN_KERNEL`** — `PluginKernel` facade that plugins call to register formulas/agents/models.
+- **`app`** — the FastAPI application, created in deps.py and imported by main.py.
 
-# Add a query node
-query_node = Node(
-    id="get_revenue",
-    node_type=NodeType.QUERY,
-    interface=TypedInterface(
-        inputs={"range": TypeSchema.range_ref()},
-        outputs={"values": TypeSchema.list(TypeSchema.number())}
-    ),
-    inputs={"range": "A1:A12"}
-)
-graph.add_node(query_node)
+Why here: `main.py` is a thin orchestrator (78 lines). It imports `app` from deps, mounts route modules, and serves static files. All initialization (kernel, providers, plugins, middleware) happens at import time in deps.py.
 
-# Add a formula node
-formula_node = Node(
-    id="calc_growth",
-    node_type=NodeType.FORMULA,
-    interface=TypedInterface(
-        inputs={"values": TypeSchema.list(TypeSchema.number())},
-        outputs={"result": TypeSchema.number()}
-    ),
-    inputs={"formula": "=(B2-B1)/B1"}
-)
-graph.add_node(formula_node)
+## 6. Running Tests
 
-# Connect them
-graph.connect("get_revenue", "calc_growth", "values")
-
-# Validate
-errors = graph.validate()
-if errors:
-    print("Validation errors:", errors)
-```
-
-## Intent Parser
-
-Converts natural language to node graphs:
-
-```python
-from core.intent_parser import IntentParser
-
-parser = IntentParser()
-intent = parser.parse("Set A1 to 100 and calculate sum in B1")
-# Returns AgentIntent with nodes for the operations
-```
-
-## YAML Templates
-
-Templates define reusable financial models:
-
-```yaml
-name: DCF Valuation
-sheet_name: DCF Model
-formulas:
-  - cell: B2
-    formula: "100000"  # Revenue
-    style:
-      number_format: currency
-  - cell: B5
-    formula: "=B2*0.05"  # Growth
-sections:
-  - name: Assumptions
-    cells:
-      - ref: A1
-        value: Growth Rate
-      - ref: B1
-        value: 0.05
-```
-
-Apply via: `POST /templates/apply/dcf_valuation`
-
-## DevTools Interface
-
-For visual graph editing and API exploration:
-
-1. Open `/dev/` in browser
-2. Use Node Graph panel to build graphs visually
-3. Use API Explorer to test endpoints
-4. Use Intent Playground to see how prompts parse
-
-## Common Tasks
-
-### Add a New Node Type
-1. Add to `NodeType` enum in `core/node_graph.py`
-2. Add color mapping in `static/dev/dev.js`
-3. Add handler in `Executor.execute_node()`
-
-### Add a New Formula Function
-1. Add to `FormulaEvaluator` in `core/functions.py`
-2. Or use declarative: add to `DEFAULT_MATH_REGISTRY` in `core/declarative_plugins.py`
-
-### Add a New Template
-1. Create YAML in `assets/templates/`
-2. Follow naming: `{name}_template.yaml`
-3. Restart server to load
-
-### Debug Node Graph Execution
-```python
-# Enable verbose logging
-graph.execute(verbose=True)
-
-# Check audit trail
-for node in graph.nodes:
-    print(f"{node.id}: {node.outputs} (error: {node._error})")
-```
-
-## Testing
-
-Run integration tests:
 ```bash
-cd /tmp/gridos-rebuild
-python -m pytest test_integration.py -v
+python test_platform.py    # Core engine, formulas, macros, collisions
+python test_plugins.py     # Plugin loading and registration
+python -c "from main import app"   # Smoke test — must import cleanly
 ```
 
-## Provider System
-
-Supports multiple LLM backends:
-- OpenRouter (default)
-- Anthropic (Claude)
-- Google (Gemini)
-- Groq
-
-Configure via env vars or dashboard at `/dashboard`.
-
-## Files to Read When Working On...
-
-| Task | Key Files |
-|------|-----------|
-| Agent behavior | `main.py:/agent/*`, `core/intent_parser.py` |
-| Grid operations | `core/engine.py:GridOSKernel` |
-| Node graph | `core/node_graph.py` |
-| UI changes | `static/app.js`, `static/index.html` |
-| Templates | `core/declarative_plugins.py`, `assets/templates/*.yaml` |
-| Auth | `main.py:/auth/*`, Supabase integration |
-
-## Gotchas
-
-1. **Always validate node graphs** before execution - types must match
-2. **Nodes are immutable after creation** - use `_evaluated` flag to check state
-3. **Null propagation** - if input is null and `null_propagation` is true, output is null
-4. **Workbook scope** - always pass `workbook_id` in SaaS mode
-5. **Templates deploy from `assets/` not `data/`** - `data/` is gitignored
+All tests are offline — no server, no API keys required.

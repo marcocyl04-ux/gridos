@@ -3722,7 +3722,8 @@ async function bootstrap() {
     await fetchWorkbook({ rehydrateChat: true });
     await fetchGrid();
     setScope("selection");
-    toggleAssistant(true);
+    // Open sidebar on desktop; keep it hidden on narrow screens
+    toggleAssistant(window.innerWidth > 900);
     refreshUndoRedoButtons();
     await refreshModelCatalog();
     attachSettingsEvents();
@@ -3807,13 +3808,6 @@ async function bootstrap() {
             }
         }, 100); // 100ms debounce
     });
-    
-    // Initialize: on narrow screens, start with sidebar overlay hidden
-    if (window.innerWidth <= 900) {
-        const panel = document.getElementById("assistant-panel");
-        assistantOpen = false;
-        panel.classList.remove("active");
-    }
     
     document.getElementById("chat-clear")?.addEventListener("click", () => {
         clearPreview();
