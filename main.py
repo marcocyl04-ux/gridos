@@ -2587,30 +2587,74 @@ async def agent_execute_graph(
 
     This endpoint accepts a structured graph of nodes, validates dependencies,
     executes in topological order with error handling and rollback.
-    """
-    import asyncio
 
+    Example request:
+    {
+        "graph": {
+            "nodes": [
+                {"id": "n1", "type": "QUERY", "inputs": {"range": "A1:A10"}},
+                {"id": "n2", "type": "SUM", "inputs": {"source": "n1.outputs.values"}}
+            ]
+        }
+    }
+    """
     # Get the current kernel
     k = _current_kernel.get()
     if k is None:
         k = _default_kernel
 
-    graph_data = body.get("graph", {})
+    graph_data = body.get("graph", body)  # Support both wrapped and unwrapped
+    nodes_data = graph_data.get("nodes", [])
+
+    if not nodes_data:
+        return {
+            "success": False,
+            "error": "No nodes provided in graph",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
 
     try:
         # Build node graph from request
-        graph = NodeGraph.from_dict(graph_data)
+        graph = NodeGraph()
+        for node_data in nodes_data:
+            node_id = node_data.get("id", f"node_{len(graph.nodes)}")
+            node_type_str = node_data.get("type", "QUERY")
+            
+            # Map string type to enum
+            node_type = NodeType[node_type_str.upper()] if hasattr(NodeType, node_type_str.upper()) else NodeType.QUERY
+            
+            node = Node(
+                id=node_id,
+                node_type=node_type,
+                interface=TypedInterface(inputs={}, outputs={}),
+                inputs=node_data.get("inputs", {}),
+                outputs={}
+            )
+            graph.add_node(node)
 
-        # Execute with coordinator
-        coordinator = Coordinator(graph, kernel=k)
-        executor = Executor(coordinator)
+        # Create coordinator and executor
+        coordinator = Coordinator(kernel=k)
+        executor = Executor(formula_registry={})  # TODO: Pass actual formula registry
 
-        result = await executor.execute()
+        # Get execution plan
+        try:
+            execution_order = coordinator.plan_execution(graph)
+        except ValueError as e:
+            return {
+                "success": False,
+                "error": f"Graph validation failed: {str(e)}",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+
+        # Execute the graph
+        result = await executor.execute(execution_order)
 
         return {
             "success": True,
             "result": result,
-            "executed_nodes": len(graph.nodes),
+            "executed_nodes": len(result.get("executed", [])),
+            "failed_nodes": len(result.get("failed", [])),
+            "skipped_nodes": len(result.get("skipped", [])),
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
     except Exception as e:
@@ -3215,43 +3259,9 @@ async def import_file_endpoint(
         raise HTTPException(status_code=400, detail=f"Import failed: {e}")
 
 
-# ---------- Node Graph Execution ----------
-
-@app.post("/agent/execute-graph")
-async def agent_execute_graph(
-    body: dict = Body(...),
-):
-    """Execute a node graph for complex multi-step agent workflows.
-    
-    This endpoint accepts a structured graph of nodes, validates dependencies,
-    executes in topological order with error handling and rollback.
-    """
-    from datetime import datetime
-    
-    # Get the current kernel
-    k = _current_kernel.get()
-    if k is None:
-        k = _default_kernel
-    
-    graph_data = body.get("graph", {})
-    
-    try:
-        # Build node graph from request
-        graph = NodeGraph.from_dict(graph_data)
-        
-        # Execute with coordinator
-        coordinator = Coordinator(graph, kernel=k)
-        executor = Executor(coordinator)
-        
-        result = await executor.execute()
-        
-        return {
-            "success": True,
-            "result": result,
-            "executed_nodes": len(graph.nodes),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
-    except Exception as e:
+# ---------- Node Graph Execution (see earlier definition at line ~2580) ----------
+# NOTE: The main /agent/execute-graph endpoint is defined earlier in the file.
+# This section was a duplicate stub and has been merged with the main implementation.
         return {
             "success": False,
             "error": str(e),

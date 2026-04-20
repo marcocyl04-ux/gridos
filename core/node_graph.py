@@ -444,3 +444,45 @@ class Executor:
             return {"result": min(values)}
         else:
             return {"result": None, "error": f"Unknown aggregate operation: {operation}"}
+    
+    async def execute(self, nodes: List[Node]) -> Dict[str, Any]:
+        """Execute a list of nodes in order, resolving dependencies.
+        
+        Returns a summary of execution results.
+        """
+        results = {
+            "executed": [],
+            "failed": [],
+            "skipped": [],
+            "outputs": {}
+        }
+        
+        for node in nodes:
+            if node._nullified:
+                results["skipped"].append({"id": node.id, "reason": "nullified"})
+                continue
+            
+            try:
+                # Resolve inputs (in real implementation, this would look up from previous nodes)
+                resolved_inputs = node.inputs.copy()
+                
+                # Evaluate the node
+                outputs = self.evaluate(node, resolved_inputs)
+                node.outputs = outputs
+                node._evaluated = True
+                
+                results["executed"].append({
+                    "id": node.id,
+                    "type": node.node_type.name,
+                    "outputs": outputs
+                })
+                results["outputs"][node.id] = outputs
+                
+            except Exception as e:
+                node._error = str(e)
+                results["failed"].append({
+                    "id": node.id,
+                    "error": str(e)
+                })
+        
+        return results
