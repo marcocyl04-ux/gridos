@@ -1698,13 +1698,13 @@ function toggleAssistant(force) {
     const panel = document.getElementById("assistant-panel");
     const backdrop = document.getElementById("assistant-backdrop");
     
-    // For mobile (narrow screens), use the slide-in panel + backdrop
-    if (window.innerWidth <= 720) {
+    // For half-screen/mobile (narrow screens), use the slide-in panel + backdrop
+    if (window.innerWidth <= 900) {
         panel.classList.toggle("visible", assistantOpen);
         panel.classList.toggle("hidden", !assistantOpen);
         if (backdrop) backdrop.classList.toggle("visible", assistantOpen);
     } else {
-        // Desktop behavior
+        // Desktop wide: inline sidebar behavior
         panel.classList.toggle("hidden", !assistantOpen);
     }
 }
@@ -3781,12 +3781,28 @@ async function bootstrap() {
     // Handle window resize to ensure panel state is correct
     window.addEventListener("resize", () => {
         const panel = document.getElementById("assistant-panel");
-        if (window.innerWidth > 720) {
-            // Desktop: clear mobile classes
+        const backdrop = document.getElementById("assistant-backdrop");
+        if (window.innerWidth > 900) {
+            // Desktop wide: sidebar always visible inline
             panel.classList.remove("visible");
             if (backdrop) backdrop.classList.remove("visible");
+            assistantOpen = true;
+            panel.classList.remove("hidden");
+        } else {
+            // Half-screen/mobile: sidebar starts hidden
+            if (assistantOpen && !panel.classList.contains("visible")) {
+                toggleAssistant(false);
+            }
         }
     });
+    
+    // Initialize: on narrow screens, start with sidebar hidden
+    if (window.innerWidth <= 900) {
+        const panel = document.getElementById("assistant-panel");
+        assistantOpen = false;
+        panel.classList.add("hidden");
+        panel.classList.remove("visible");
+    }
     
     document.getElementById("chat-clear")?.addEventListener("click", () => {
         clearPreview();
