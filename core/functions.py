@@ -94,6 +94,81 @@ def _round(value, digits=0):
     return round(value, int(digits))
 
 
+@register_tool("MEDIAN")
+def _median(*args):
+    if not args:
+        return 0
+    values = list(args)
+    n = len(values)
+    values.sort()
+    if n % 2 == 1:
+        return values[n // 2]
+    return (values[n // 2 - 1] + values[n // 2]) / 2
+
+
+@register_tool("COUNTIF")
+def _countif(*args):
+    """Count cells that match a criteria.
+    Usage: COUNTIF(range, criteria) where criteria can be:
+    - A number to match exactly
+    - A comparison string like ">5", "<3", "=hello"
+    
+    The parser passes args as: [range_values_list, criteria]
+    where range_values_list is already resolved from A1:A10 syntax.
+    """
+    if len(args) < 2:
+        return 0
+    
+    # First arg is the range values (list), second is criteria
+    values = args[0] if isinstance(args[0], list) else [args[0]]
+    criteria = args[1]
+
+    # Parse criteria
+    if isinstance(criteria, str):
+        criteria_str = criteria.strip()
+        if criteria_str.startswith(">="):
+            try:
+                threshold = float(criteria_str[2:])
+                return sum(1 for v in values if v is not None and v != "" and float(v) >= threshold)
+            except ValueError:
+                pass
+        if criteria_str.startswith(">"):
+            try:
+                threshold = float(criteria_str[1:])
+                return sum(1 for v in values if v is not None and v != "" and float(v) > threshold)
+            except ValueError:
+                pass
+        if criteria_str.startswith("<="):
+            try:
+                threshold = float(criteria_str[2:])
+                return sum(1 for v in values if v is not None and v != "" and float(v) <= threshold)
+            except ValueError:
+                pass
+        if criteria_str.startswith("<"):
+            try:
+                threshold = float(criteria_str[1:])
+                return sum(1 for v in values if v is not None and v != "" and float(v) < threshold)
+            except ValueError:
+                pass
+        if criteria_str.startswith("="):
+            match_val = criteria_str[1:]
+            # Try numeric match first, then string match
+            try:
+                num_val = float(match_val)
+                return sum(1 for v in values if v is not None and float(v) == num_val)
+            except ValueError:
+                return sum(1 for v in values if str(v) == match_val)
+        # No prefix - exact match
+        try:
+            num_criteria = float(criteria_str)
+            return sum(1 for v in values if v is not None and float(v) == num_criteria)
+        except ValueError:
+            return sum(1 for v in values if str(v) == criteria_str)
+    else:
+        # numeric criteria - exact match
+        return sum(1 for v in values if v is not None and float(v) == float(criteria))
+
+
 def _truthy(v):
     # Empty string / None are falsy; everything else follows Python truthiness.
     if v is None or v == "":
