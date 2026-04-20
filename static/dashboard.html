@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GridOS — Dashboard</title>
+    <style>
+        :root {
+            --bg: #ffffff;
+            --bg-soft: #f8f9fa;
+            --bg-hover: #f1f3f4;
+            --bg-active: #e8eaed;
+            --border: #dadce0;
+            --border-soft: #e8eaed;
+            --text: #202124;
+            --text-muted: #5f6368;
+            --text-mutedder: #80868b;
+            --accent: #1a73e8;
+            --accent-soft: #e8f0fe;
+            --accent-hover: #1765cc;
+            --success: #1e8e3e;
+            --success-soft: #e6f4ea;
+            --danger: #d93025;
+            --danger-soft: #fce8e6;
+            --warning: #f9ab00;
+            --warning-soft: #fef7e0;
+            --shadow-1: 0 1px 2px rgba(60,64,67,0.1), 0 1px 3px rgba(60,64,67,0.08);
+            --shadow-2: 0 2px 6px rgba(60,64,67,0.15);
+            --shadow-3: 0 4px 12px rgba(60,64,67,0.18);
+            --radius: 8px;
+            --radius-lg: 12px;
+            --radius-sm: 4px;
+            --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            font-family: var(--font-ui);
+            font-size: 14px;
+            color: var(--text);
+            background: var(--bg-soft);
+            -webkit-font-smoothing: antialiased;
+            height: 100%;
+        }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+
+        /* ===== Top Bar ===== */
+        .topbar {
+            height: 56px;
+            background: var(--bg);
+            border-bottom: 1px solid var(--border-soft);
+            display: flex;
+            align-items: center;
+            padding: 0 24px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .topbar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .topbar-logo {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #1a73e8, #34a853);
+            display: grid;
+            place-items: center;
+            color: #fff;
+            font-weight: 700;
+            font-size: 12px;
+        }
+        .topbar-brand h1 {
+            font-size: 17px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+        }
+        .topbar-search {
+            flex: 1;
+            max-width: 480px;
+            margin: 0 32px;
+            position: relative;
+        }
+        .topbar-search input {
+            width: 100%;
+            height: 36px;
+            padding: 0 12px 0 36px;
+            border: 1px solid var(--border-soft);
+            border-radius: 18px;
+            font-size: 13px;
+            background: var(--bg-soft);
+            color: var(--text);
+            outline: none;
+            transition: border-color 150ms, box-shadow 150ms;
+        }
+        .topbar-search input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-soft);
+            background: var(--bg);
+        }
+        .topbar-search input::placeholder { color: var(--text-mutedder); }
+        .topbar-search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-mutedder);
+            font-size: 14px;
+        }
+        .topbar-spacer { flex: 1; }
+        .topbar-actions { display: flex; align-items: center; gap: 8px; }
+        .topbar-actions button {
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: background 150ms, border-color 150ms;
+        }
+        .topbar-actions button:hover {
+            background: var(--bg-hover);
+            border-color: var(--text-mutedder);
+        }
+        .topbar-actions .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+        .topbar-actions .btn-primary:hover {
+            background: var(--accent-hover);
+            border-color: var(--accent-hover);
+        }
+
+        /* ===== Main Content ===== */
+        .main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 32px 24px;
+        }
+
+        /* ===== Section Headers ===== */
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px;
+        }
+        .section-header h2 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .section-header h2 .icon { font-size: 16px; }
+        .section-header .view-all {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        .section-header .view-all:hover { color: var(--accent); }
+
+        /* ===== Quick Start Cards ===== */
+        .quick-start {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 12px;
+            margin-bottom: 32px;
+        }
+        .qs-card {
+            background: var(--bg);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius-lg);
+            padding: 20px 16px;
+            cursor: pointer;
+            transition: border-color 150ms, box-shadow 150ms, transform 80ms;
+            text-align: center;
+        }
+        .qs-card:hover {
+            border-color: var(--accent);
+            box-shadow: var(--shadow-2);
+            transform: translateY(-1px);
+        }
+        .qs-card .qs-icon {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        .qs-card .qs-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .qs-card .qs-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            line-height: 1.4;
+        }
+
+        /* ===== Workspace / Template Cards ===== */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .card {
+            background: var(--bg);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius-lg);
+            padding: 0;
+            cursor: pointer;
+            transition: border-color 150ms, box-shadow 150ms, transform 80ms;
+            overflow: hidden;
+        }
+        .card:hover {
+            border-color: var(--accent);
+            box-shadow: var(--shadow-2);
+            transform: translateY(-1px);
+        }
+        .card-thumb {
+            height: 80px;
+            background: linear-gradient(135deg, var(--accent-soft), #f0f4ff);
+            display: grid;
+            place-items: center;
+            font-size: 28px;
+            position: relative;
+        }
+        .card-thumb .card-thumb-icon { font-size: 28px; }
+        .card-body { padding: 16px; }
+        .card-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .card-desc {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 8px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .card-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: var(--text-mutedder);
+        }
+        .card-tag {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+        .card-tag.automation { background: var(--accent-soft); color: var(--accent); }
+        .card-tag.custom { background: var(--warning-soft); color: #b06000; }
+        .card-tag.builtin { background: var(--success-soft); color: var(--success); }
+
+        /* ===== Hero Prompt ===== */
+        .hero {
+            background: var(--bg);
+            border: 1px solid var(--border-soft);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            margin-bottom: 32px;
+            text-align: center;
+        }
+        .hero h2 {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text);
+        }
+        .hero p {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+        .hero-input-wrap {
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+        }
+        .hero-input-wrap input {
+            width: 100%;
+            height: 48px;
+            padding: 0 48px 0 16px;
+            border: 2px solid var(--border);
+            border-radius: 24px;
+            font-size: 15px;
+            color: var(--text);
+            outline: none;
+            transition: border-color 150ms, box-shadow 150ms;
+        }
+        .hero-input-wrap input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 4px var(--accent-soft);
+        }
+        .hero-input-wrap input::placeholder { color: var(--text-mutedder); }
+        .hero-submit {
+            position: absolute;
+            right: 4px;
+            top: 4px;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: var(--accent);
+            color: #fff;
+            font-size: 18px;
+            cursor: pointer;
+            display: grid;
+            place-items: center;
+            transition: background 150ms;
+        }
+        .hero-submit:hover { background: var(--accent-hover); }
+        .hero-examples {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 16px;
+            flex-wrap: wrap;
+        }
+        .hero-example {
+            padding: 6px 12px;
+            border: 1px solid var(--border-soft);
+            border-radius: 16px;
+            font-size: 12px;
+            color: var(--text-muted);
+            background: var(--bg);
+            cursor: pointer;
+            transition: background 150ms, border-color 150ms;
+        }
+        .hero-example:hover {
+            background: var(--accent-soft);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* ===== Empty State ===== */
+        .empty-state {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--text-muted);
+        }
+        .empty-state .empty-icon { font-size: 32px; margin-bottom: 12px; }
+        .empty-state p { font-size: 13px; }
+
+        /* ===== Category Tabs ===== */
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--border-soft);
+            padding-bottom: 0;
+        }
+        .tab {
+            padding: 8px 14px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -1px;
+            transition: color 150ms, border-color 150ms;
+        }
+        .tab:hover { color: var(--text); }
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
+        /* ===== Loading ===== */
+        .loading-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,0.85);
+            display: grid;
+            place-items: center;
+            z-index: 200;
+        }
+        .loading-overlay[hidden] { display: none; }
+        .loading-text {
+            font-size: 15px;
+            color: var(--text-muted);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+        }
+        .loading-spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ===== Toast ===== */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(20px);
+            background: var(--text);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: var(--radius);
+            font-size: 13px;
+            z-index: 300;
+            opacity: 0;
+            transition: opacity 200ms, transform 200ms;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast.error { background: var(--danger); }
+    </style>
+</head>
+<body>
+    <!-- Loading overlay -->
+    <div id="loading-overlay" class="loading-overlay" hidden>
+        <div class="loading-text">
+            <div class="loading-spinner"></div>
+            <span id="loading-text">Loading…</span>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Top bar -->
+    <div class="topbar">
+        <div class="topbar-brand">
+            <div class="topbar-logo">G</div>
+            <h1>GridOS</h1>
+        </div>
+        <div class="topbar-search">
+            <span class="topbar-search-icon">🔍</span>
+            <input type="text" id="global-search" placeholder="Search workbooks, templates, formulas…" />
+        </div>
+        <div class="topbar-spacer"></div>
+        <div class="topbar-actions">
+            <button onclick="window.location.href='/workbook'">Open Workbook</button>
+            <button onclick="window.location.href='/workbook#settings'" title="API Keys">⚙️ Keys</button>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="main">
+        <!-- Hero prompt -->
+        <div class="hero">
+            <h2>What would you like to build?</h2>
+            <p>Describe your financial model, and GridOS will create it for you.</p>
+            <div class="hero-input-wrap">
+                <input type="text" id="hero-prompt-input" placeholder="e.g., Build me a DCF model for a SaaS company with $5M ARR…" />
+                <button class="hero-submit" id="hero-submit">→</button>
+            </div>
+            <div class="hero-examples">
+                <span class="hero-example" data-example="Build me a 3-statement financial model">3-Statement Model</span>
+                <span class="hero-example" data-example="Create a Black-Scholes option pricer">Option Pricer</span>
+                <span class="hero-example" data-example="Build a real estate pro-forma for a $5M property">RE Pro Forma</span>
+                <span class="hero-example" data-example="Create a DCF valuation with 5-year projections">DCF Valuation</span>
+            </div>
+        </div>
+
+        <!-- Quick Start -->
+        <div class="section-header">
+            <h2><span class="icon">⚡</span> Quick Start</h2>
+        </div>
+        <div class="quick-start">
+            <div class="qs-card" onclick="openBlank()">
+                <div class="qs-icon">📄</div>
+                <div class="qs-label">Blank Workbook</div>
+                <div class="qs-desc">Start fresh with an empty grid</div>
+            </div>
+            <div class="qs-card" onclick="window.location.href='#templates'">
+                <div class="qs-icon">📋</div>
+                <div class="qs-label">From Template</div>
+                <div class="qs-desc">Choose from pre-built models</div>
+            </div>
+            <div class="qs-card" onclick="document.getElementById('import-file-input').click()">
+                <div class="qs-icon">📁</div>
+                <div class="qs-label">Import Data</div>
+                <div class="qs-desc">Upload CSV or Excel</div>
+            </div>
+            <div class="qs-card" onclick="window.location.href='#plugins'">
+                <div class="qs-icon">🔌</div>
+                <div class="qs-label">Plugins</div>
+                <div class="qs-desc">Extend with custom formulas</div>
+            </div>
+        </div>
+
+        <!-- Recent Workspaces -->
+        <div class="section-header">
+            <h2><span class="icon">📂</span> Recent Workspaces</h2>
+            <a href="#" class="view-all" id="workspaces-view-all">View all →</a>
+        </div>
+        <div id="workspaces-grid" class="grid"></div>
+        <div id="workspaces-empty" class="empty-state" hidden>
+            <div class="empty-icon">📂</div>
+            <p>No saved workspaces yet. Create one from the Quick Start above!</p>
+        </div>
+
+        <!-- Templates -->
+        <div id="templates" class="section-header" style="margin-top: 32px;">
+            <h2><span class="icon">📋</span> Templates</h2>
+        </div>
+        <div class="tabs" id="template-tabs">
+            <span class="tab active" data-category="all">All</span>
+            <span class="tab" data-category="valuation">Valuation</span>
+            <span class="tab" data-category="real_estate">Real Estate</span>
+            <span class="tab" data-category="trading">Trading</span>
+            <span class="tab" data-category="risk">Risk</span>
+            <span class="tab" data-category="custom">Custom</span>
+        </div>
+        <div id="template-grid" class="grid"></div>
+        <div id="template-empty" class="empty-state" hidden>
+            <div class="empty-icon">📋</div>
+            <p>No templates yet. They'll appear here once available.</p>
+        </div>
+
+        <!-- Plugins -->
+        <div id="plugins" class="section-header" style="margin-top: 32px;">
+            <h2><span class="icon">🔌</span> Plugins</h2>
+        </div>
+        <div id="plugin-grid" class="grid"></div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+        const IS_SAAS = () => document.querySelector('meta[name="saas-mode"]')?.content === "true";
+
+        // ===== Utility =====
+        function showLoading(text) {
+            document.getElementById("loading-text").textContent = text || "Loading…";
+            document.getElementById("loading-overlay").hidden = false;
+        }
+        function hideLoading() {
+            document.getElementById("loading-overlay").hidden = true;
+        }
+        function showError(message) {
+            const toast = document.getElementById("toast");
+            toast.textContent = message;
+            toast.classList.add("show", "error");
+            setTimeout(() => toast.classList.remove("show", "error"), 4000);
+        }
+        function showSuccess(message) {
+            const toast = document.getElementById("toast");
+            toast.textContent = message;
+            toast.classList.add("show");
+            setTimeout(() => toast.classList.remove("show"), 3000);
+        }
+        function escapeHtml(value) {
+            const el = document.createElement("span");
+            el.textContent = String(value ?? "");
+            return el.innerHTML;
+        }
+        function formatDate(iso) {
+            if (!iso) return "";
+            try {
+                const d = new Date(iso);
+                const now = new Date();
+                const diff = now - d;
+                if (diff < 60000) return "just now";
+                if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+                if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+                if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
+                return d.toLocaleDateString();
+            } catch { return ""; }
+        }
+
+        // ===== Hero Prompt =====
+        const heroInput = document.getElementById("hero-prompt-input");
+        const heroSubmit = document.getElementById("hero-submit");
+
+        heroSubmit.addEventListener("click", submitHeroPrompt);
+        heroInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                submitHeroPrompt();
+            }
+        });
+        document.querySelectorAll("[data-example]").forEach((chip) => {
+            chip.addEventListener("click", () => {
+                heroInput.value = chip.dataset.example;
+                heroInput.focus();
+            });
+        });
+
+        async function submitHeroPrompt() {
+            const prompt = heroInput.value.trim();
+            if (!prompt) return;
+            showLoading("Preparing workbook…");
+            try {
+                sessionStorage.setItem("gridos.initialPrompt", prompt);
+                sessionStorage.setItem("gridos.initialAutosubmit", "1");
+                await fetch(`${API_BASE}/system/clear`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({}),
+                });
+                window.location.href = "/workbook";
+            } catch (e) {
+                hideLoading();
+                showError(`Could not start workbook: ${e.message}`);
+            }
+        }
+
+        // ===== Quick Start Actions =====
+        async function openBlank() {
+            showLoading("Starting blank workbook…");
+            try {
+                await fetch(`${API_BASE}/system/clear`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({}),
+                });
+                window.location.href = "/workbook";
+            } catch (e) {
+                hideLoading();
+                showError(`Could not start: ${e.message}`);
+            }
+        }
+
+        async function openWorkspace(id) {
+            showLoading("Loading workspace…");
+            try {
+                const cloudRes = await fetch(`${API_BASE}/cloud/status`);
+                const cloudStatus = await cloudRes.json().catch(() => ({ mode: "oss" }));
+                
+                if (cloudStatus.mode === "saas") {
+                    // SaaS: just navigate to workbook with the ID
+                    window.location.href = `/workbook?id=${encodeURIComponent(id)}`;
+                } else {
+                    // OSS: load from disk
+                    const res = await fetch(`${API_BASE}/workspaces/load/${encodeURIComponent(id)}`, { method: "POST" });
+                    if (!res.ok) throw new Error("Load failed");
+                    window.location.href = "/workbook";
+                }
+            } catch (e) {
+                hideLoading();
+                showError(`Could not load workspace: ${e.message}`);
+            }
+        }
+
+        async function applyTemplateAndOpen(templateId, templateName) {
+            showLoading(`Applying "${templateName}"…`);
+            try {
+                const res = await fetch(`${API_BASE}/templates/apply/${encodeURIComponent(templateId)}`, { method: "POST" });
+                if (!res.ok) throw new Error("Template apply failed");
+                window.location.href = "/workbook";
+            } catch (e) {
+                hideLoading();
+                showError(`Could not apply template: ${e.message}`);
+            }
+        }
+
+        // ===== Load Workspaces =====
+        async function loadWorkspaces() {
+            const grid = document.getElementById("workspaces-grid");
+            const empty = document.getElementById("workspaces-empty");
+            
+            try {
+                let workspaces = [];
+                
+                // SaaS mode: query /workbooks (Supabase-backed)
+                // OSS mode: query /workspaces/list (disk-backed)
+                const cloudRes = await fetch(`${API_BASE}/cloud/status`);
+                const cloudStatus = await cloudRes.json().catch(() => ({ mode: "oss" }));
+                
+                if (cloudStatus.mode === "saas" && supabaseClient) {
+                    // SaaS: get auth token and query /workbooks
+                    const { data: { session } } = await supabaseClient.auth.getSession();
+                    if (session) {
+                        const headers = { "Authorization": `Bearer ${session.access_token}` };
+                        const res = await fetch(`${API_BASE}/workbooks`, { headers });
+                        const data = await res.json();
+                        workspaces = (data.workbooks || []).map(wb => ({
+                            id: wb.id,
+                            name: wb.title || "Untitled",
+                            description: "",
+                            created_at: wb.created_at,
+                            modified_at: wb.updated_at,
+                            cell_count: 0,
+                            sheet_count: 0,
+                        }));
+                    }
+                } else {
+                    // OSS: query disk-based workspaces
+                    const res = await fetch(`${API_BASE}/workspaces/list`);
+                    const data = await res.json();
+                    workspaces = data.workspaces || [];
+                }
+                
+                if (workspaces.length === 0) {
+                    grid.hidden = true;
+                    empty.hidden = false;
+                    return;
+                }
+                
+                grid.hidden = false;
+                empty.hidden = true;
+                grid.innerHTML = "";
+                
+                workspaces.forEach((ws) => {
+                    const card = document.createElement("div");
+                    card.className = "card";
+                    card.innerHTML = `
+                        <div class="card-thumb">
+                            <span class="card-thumb-icon">📊</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-title">${escapeHtml(ws.name)}</div>
+                            <div class="card-desc">${escapeHtml(ws.description || "")}</div>
+                            <div class="card-meta">
+                                <span>${ws.cell_count} cells</span>
+                                <span>·</span>
+                                <span>${formatDate(ws.modified_at)}</span>
+                            </div>
+                        </div>
+                    `;
+                    card.addEventListener("click", () => openWorkspace(ws.id));
+                    grid.appendChild(card);
+                });
+            } catch (e) {
+                grid.innerHTML = `<div class="empty-state">Could not load workspaces: ${escapeHtml(e.message)}</div>`;
+            }
+        }
+
+        // ===== Load Templates =====
+        let allTemplates = [];
+
+        async function loadTemplates() {
+            const grid = document.getElementById("template-grid");
+            const empty = document.getElementById("template-empty");
+            
+            try {
+                const res = await fetch(`${API_BASE}/templates/list`);
+                const data = await res.json();
+                allTemplates = data.templates || [];
+                
+                renderTemplates(allTemplates);
+                return;
+            } catch (e) {
+                grid.innerHTML = `<div class="empty-state">Could not load templates: ${escapeHtml(e.message)}</div>`;
+            }
+        }
+
+        function renderTemplates(templates) {
+            const grid = document.getElementById("template-grid");
+            const empty = document.getElementById("template-empty");
+            
+            if (!templates.length) {
+                grid.hidden = true;
+                empty.hidden = false;
+                return;
+            }
+            
+            grid.hidden = false;
+            empty.hidden = true;
+            grid.innerHTML = "";
+            
+            templates.forEach((tpl) => {
+                const card = document.createElement("div");
+                card.className = "card";
+                const category = tpl.category || "custom";
+                const tagClass = category === "valuation" ? "automation" : 
+                                 category === "real_estate" ? "builtin" : "custom";
+                const categoryLabel = category.replace("_", " ");
+                
+                card.innerHTML = `
+                    <div class="card-thumb">
+                        <span class="card-thumb-icon">${category === "valuation" ? "📈" : category === "real_estate" ? "🏠" : "📊"}</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title">${escapeHtml(tpl.name || tpl.id)}</div>
+                        <div class="card-desc">${escapeHtml(tpl.description || "")}</div>
+                        <div class="card-meta">
+                            <span class="card-tag ${tagClass}">${categoryLabel}</span>
+                            <span>${tpl.cell_count || 0} cells</span>
+                        </div>
+                    </div>
+                `;
+                card.addEventListener("click", () => applyTemplateAndOpen(tpl.id, tpl.name || tpl.id));
+                grid.appendChild(card);
+            });
+        }
+
+        // Template category tabs
+        document.querySelectorAll(".tab").forEach((tab) => {
+            tab.addEventListener("click", () => {
+                document.querySelectorAll(".tab").forEach((t) => t.classList.remove("active"));
+                tab.classList.add("active");
+                const category = tab.dataset.category;
+                if (category === "all") {
+                    renderTemplates(allTemplates);
+                } else {
+                    renderTemplates(allTemplates.filter((t) => t.category === category));
+                }
+            });
+        });
+
+        // ===== Load Plugins =====
+        async function loadPlugins() {
+            const grid = document.getElementById("plugin-grid");
+            
+            try {
+                const res = await fetch(`${API_BASE}/plugins`);
+                const data = await res.json();
+                
+                if (Array.isArray(data) && data.length > 0) {
+                    grid.innerHTML = "";
+                    data.forEach((plugin) => {
+                        const card = document.createElement("div");
+                        card.className = "card";
+                        card.innerHTML = `
+                            <div class="card-thumb">
+                                <span class="card-thumb-icon">🔌</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="card-title">${escapeHtml(plugin.name || plugin.slug)}</div>
+                                <div class="card-desc">${escapeHtml(plugin.description || "")}</div>
+                                <div class="card-meta">
+                                    <span class="card-tag builtin">Plugin</span>
+                                    <span>${(plugin.formulas || []).length} formulas</span>
+                                </div>
+                            </div>
+                        `;
+                        grid.appendChild(card);
+                    });
+                } else {
+                    grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🔌</div><p>No plugins installed yet.</p></div>`;
+                }
+            } catch (e) {
+                grid.innerHTML = `<div class="empty-state">Could not load plugins.</div>`;
+            }
+        }
+
+        // ===== Global Search =====
+        document.getElementById("global-search").addEventListener("input", (e) => {
+            const query = e.target.value.toLowerCase();
+            
+            // Filter templates
+            const filtered = allTemplates.filter((t) => 
+                (t.name || "").toLowerCase().includes(query) ||
+                (t.description || "").toLowerCase().includes(query) ||
+                (t.category || "").toLowerCase().includes(query)
+            );
+            renderTemplates(filtered);
+        });
+
+        // ===== Supabase Session Check (SaaS mode) =====
+        // Show loading overlay immediately to prevent unauthenticated content flash
+        showLoading("Checking session…");
+        
+        let supabaseClient = null;
+        
+        async function initAuth() {
+            try {
+                const res = await fetch(`${API_BASE}/cloud/status`);
+                const cloudStatus = await res.json();
+                
+                // OSS mode: no auth required
+                if (cloudStatus.mode !== "saas") {
+                    hideLoading();
+                    loadWorkspaces();
+                    loadTemplates();
+                    loadPlugins();
+                    return;
+                }
+                
+                // SaaS mode: check for Supabase config
+                if (!cloudStatus.client_config?.supabase_url) {
+                    hideLoading();
+                    showError("Authentication not configured properly.");
+                    return;
+                }
+                
+                // Initialize Supabase client
+                const { createClient } = await import("https://esm.sh/@supabase/supabase-js@2?bundle");
+                supabaseClient = createClient(
+                    cloudStatus.client_config.supabase_url, 
+                    cloudStatus.client_config.supabase_anon_key, 
+                    {
+                        auth: { 
+                            persistSession: true, 
+                            autoRefreshToken: true, 
+                            detectSessionInUrl: true 
+                        },
+                    }
+                );
+                
+                // Check for existing session
+                const { data: { session }, error } = await supabaseClient.auth.getSession();
+                
+                if (error) {
+                    console.error("Session error:", error);
+                    window.location.replace("/login");
+                    return;
+                }
+                
+                if (!session) {
+                    // No session — redirect to login immediately
+                    window.location.replace("/login");
+                    return;
+                }
+                
+                // Session exists — show user info in topbar
+                const email = session.user?.email || "";
+                const nameBtn = document.querySelector(".topbar-actions button:last-child");
+                if (nameBtn && email) {
+                    nameBtn.textContent = email.split("@")[0];
+                    nameBtn.title = email;
+                    nameBtn.onclick = async () => {
+                        showLoading("Signing out…");
+                        await supabaseClient.auth.signOut();
+                        window.location.replace("/login");
+                    };
+                }
+                
+                // Set up session change listener
+                supabaseClient.auth.onAuthStateChange((event, newSession) => {
+                    if (event === 'SIGNED_OUT' || !newSession) {
+                        window.location.replace("/login");
+                    }
+                });
+                
+                // Hide loading and load data
+                hideLoading();
+                loadWorkspaces();
+                loadTemplates();
+                loadPlugins();
+                
+            } catch (e) {
+                console.error("Auth init error:", e);
+                showLoading("Authentication error. Redirecting…");
+                setTimeout(() => window.location.replace("/login"), 1000);
+            }
+        }
+        
+        // Start auth check immediately
+        initAuth();
+    </script>
+
+        <!-- File import input -->
+        <input type="file" id="import-file-input" accept=".csv,.xlsx,.xlsm" hidden />
+        
+        <script>
+        document.getElementById("import-file-input").addEventListener("change", async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            showLoading(`Importing "${file.name}"…`);
+            
+            const formData = new FormData();
+            formData.append("file", file);
+            
+            try {
+                const res = await fetch(`${API_BASE}/import/file?has_header=true`, {
+                    method: "POST",
+                    body: formData,
+                });
+                
+                const data = await res.json();
+                
+                if (!res.ok) {
+                    throw new Error(data.detail?.errors?.join(", ") || "Import failed");
+                }
+                
+                showSuccess(`Imported ${data.populated_cells} cells from "${file.name}"`);
+                
+                // Navigate to workbook after short delay
+                setTimeout(() => {
+                    showLoading("Opening workbook…");
+                    window.location.href = "/workbook";
+                }, 1000);
+                
+            } catch (err) {
+                hideLoading();
+                showError(`Import failed: ${err.message}`);
+            }
+            
+            // Reset file input
+            e.target.value = "";
+        });
+        </script>
+    
+</body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "active_sheet": "Sheet1",
+  "sheet_order": [
+    "Sheet1",
+    "Sheet 2"
+  ],
+  "sheets": {
+    "Sheet1": {
+      "A1": {
+        "value": 19,
+        "formula": null,
+        "datatype": "int",
+        "locked": false,
+        "agent_owner": "User"
+      },
+      "A2": {
+        "value": 59,
+        "formula": null,
+        "datatype": "int",
+        "locked": false,
+        "agent_owner": "User"
+      }
+    },
+    "Sheet 2": {}
+  }
+}

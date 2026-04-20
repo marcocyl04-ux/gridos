@@ -1,0 +1,55 @@
+# Render deploy manifest — one-click provisioning for the hosted SaaS tier.
+# https://render.com/docs/blueprint-spec
+#
+# This only describes the runtime; every env var in `envVars` with `sync: false`
+# must be pasted into the Render dashboard after the service is created.
+# Nothing sensitive is committed here.
+#
+# Build plan:
+#   pip install -r requirements.txt
+# Start plan:
+#   uvicorn main:app --host 0.0.0.0 --port $PORT
+# Health check:
+#   GET /healthz  → {"ok": true}
+#
+# Free tier caveat: the web service sleeps after ~15 min idle. Aim a free
+# UptimeRobot monitor at https://<service>.onrender.com/healthz every 5 min
+# during active hours to mask cold starts.
+
+services:
+  - type: web
+    name: gridos
+    runtime: python
+    plan: free
+    region: oregon
+    branch: master
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      # --- SaaS runtime (set to enable the cloud tier) ---
+      - key: SAAS_MODE
+        value: "true"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: SUPABASE_JWT_SECRET
+        sync: false
+      # --- LLM provider keys ---
+      # SaaS is BYOK: users add their own Gemini/Anthropic/Groq/OpenRouter
+      # keys from the in-app Settings panel; they live in public.user_api_keys
+      # and the operator never pays LLM bills. No server-side env vars are
+      # needed or used — if you set them here, they're still ignored in SaaS
+      # mode (only the per-user row is read at request time).
+      #
+      # --- Optional workbook-slot tier tuning (defaults in cloud/config.py) ---
+      # - key: FREE_TIER_MAX_WORKBOOKS
+      #   value: "3"
+      # - key: PRO_TIER_MAX_WORKBOOKS
+      #   value: "50"
