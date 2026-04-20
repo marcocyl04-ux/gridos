@@ -6,7 +6,7 @@ class OpenRouterProvider(Provider):
     display_name = "OpenRouter"
 
     _BASE_URL = "https://openrouter.ai/api/v1"
-    _MAX_TOKENS = 4096
+    _MAX_TOKENS = 8192
 
     def __init__(self, api_key: str):
         super().__init__(api_key)
@@ -21,6 +21,7 @@ class OpenRouterProvider(Provider):
         self._client = openai.OpenAI(
             api_key=api_key,
             base_url=self._BASE_URL,
+            timeout=120.0,
             default_headers={
                 "HTTP-Referer": "https://github.com/shreydevkar/gridos_kernel",
                 "X-Title": "GridOS",
@@ -35,26 +36,17 @@ class OpenRouterProvider(Provider):
         user_message: str,
         max_output_tokens: int | None = None,
     ) -> ProviderResponse:
-        # openai>=2.0 deprecated `max_tokens` in favor of `max_completion_tokens`.
-        # Try the new name first, fall back to the legacy name for older SDKs.
+        # Use `max_tokens` for broad compatibility — OpenRouter and some
+        # free-tier providers don't yet support `max_completion_tokens`.
         effective_max = max_output_tokens if max_output_tokens is not None else self._MAX_TOKENS
-        create_kwargs = dict(
+        response = self._client.chat.completions.create(
             model=model,
             messages=[
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": user_message},
             ],
+            max_tokens=effective_max,
         )
-        try:
-            response = self._client.chat.completions.create(
-                **create_kwargs,
-                max_completion_tokens=effective_max,
-            )
-        except TypeError:
-            response = self._client.chat.completions.create(
-                **create_kwargs,
-                max_tokens=effective_max,
-            )
 
         text = ""
         finish_reason = None

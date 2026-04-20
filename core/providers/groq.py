@@ -8,11 +8,11 @@ class GroqProvider(Provider):
     _BASE_URL = "https://api.groq.com/openai/v1"
     # Multi-intent agent responses (e.g. a 25-rectangle 3-statement model)
     # comfortably push 6–8K tokens of JSON. Was 16384, but Groq's free-tier
-    # TPM bucket counts the RESERVED max_completion_tokens up-front — a 16K
-    # reservation on a 3.5K prompt = ~20K "requested", which blew past the
-    # 8K free-tier cap on gpt-oss-120b even for simple DCF prompts. 8192
-    # still clears multi-intent JSON in practice while halving the up-front
-    # TPM reservation. Paying-tier users can raise this per call via the
+    # TPM bucket counts the RESERVED tokens up-front — a 16K reservation on
+    # a 3.5K prompt = ~20K "requested", which blew past the 8K free-tier cap
+    # on gpt-oss-120b even for simple DCF prompts. 8192 still clears
+    # multi-intent JSON in practice while halving the up-front TPM
+    # reservation. Paying-tier users can raise this per call via the
     # `max_output_tokens` kwarg if they hit `finish_reason=length`.
     _MAX_TOKENS = 8192
 
@@ -26,7 +26,11 @@ class GroqProvider(Provider):
                 "Install it with `pip install openai`."
             ) from e
         self._openai = openai
-        self._client = openai.OpenAI(api_key=api_key, base_url=self._BASE_URL)
+        self._client = openai.OpenAI(
+            api_key=api_key,
+            base_url=self._BASE_URL,
+            timeout=120.0,
+        )
 
     def generate(
         self,
@@ -36,28 +40,17 @@ class GroqProvider(Provider):
         user_message: str,
         max_output_tokens: int | None = None,
     ) -> ProviderResponse:
-        # Groq's free-tier TPM counts RESERVED max_completion_tokens against the
-        # bucket up-front, so always using _MAX_TOKENS=16384 instantly blows the
-        # 6K TPM cap on tiny models like llama-3.1-8b even for router-sized
-        # prompts. Honor the caller's override when given (router passes ~64).
+        # Groq's free-tier TPM counts RESERVED tokens against the bucket
+        # up-front. Honor the caller's override when given (router passes ~64).
         effective_max = max_output_tokens if max_output_tokens is not None else self._MAX_TOKENS
-        create_kwargs = dict(
+        response = self._client.chat.completions.create(
             model=model,
             messages=[
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": user_message},
             ],
+            max_tokens=effective_max,
         )
-        try:
-            response = self._client.chat.completions.create(
-                **create_kwargs,
-                max_completion_tokens=effective_max,
-            )
-        except TypeError:
-            response = self._client.chat.completions.create(
-                **create_kwargs,
-                max_tokens=effective_max,
-            )
 
         text = ""
         finish_reason = None

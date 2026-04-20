@@ -4,6 +4,7 @@ GridOS API — Agent endpoints.
 Handles: /agent/chat, /agent/apply, /agent/chat/chain, /agent/write
 """
 
+import asyncio
 import json
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
@@ -33,6 +34,11 @@ from .deps import (
 
 router = APIRouter()
 
+# Per-kernel concurrency locks — keyed by kernel id so different
+# users / workbooks don't block each other, but same-kernel requests
+# are serialized to prevent shared-state corruption.
+_kernel_locks: dict[int, asyncio.Lock] = {}
+
 
 @router.post("/agent/chat")
 async def chat_with_agent(
@@ -49,23 +55,32 @@ async def chat_with_agent(
                 "message": "Monthly token cap reached for your tier.",
                 "usage": qe.summary,
             })
-    try:
-        return generate_agent_preview(req)
-    except HTTPException:
-        raise
-    except Exception as e:
-        kind = _classify_model_error(e)
-        if kind == "transient":
-            raise HTTPException(
-                status_code=503,
-                detail="Model provider is temporarily overloaded (tried 4x with backoff). Wait a moment and try again.",
-            )
-        if kind == "auth":
-            raise HTTPException(
-                status_code=401,
-                detail="The API key for this model was rejected. Update it in Settings.",
-            )
-        raise HTTPException(status_code=500, detail=f"Agent Error: {str(e)}")
+
+    kid = id(k)
+    lock = _kernel_locks.setdefault(kid, asyncio.Lock())
+    if lock.locked():
+        raise HTTPException(
+            status_code=429,
+            detail="A request is already in progress for this workbook. Please wait and try again.",
+        )
+    async with lock:
+        try:
+            return generate_agent_preview(req)
+        except HTTPException:
+            raise
+        except Exception as e:
+            kind = _classify_model_error(e)
+            if kind == "transient":
+                raise HTTPException(
+                    status_code=503,
+                    detail="Model provider is temporarily overloaded (tried 4x with backoff). Wait a moment and try again.",
+                )
+            if kind == "auth":
+                raise HTTPException(
+                    status_code=401,
+                    detail="The API key for this model was rejected. Update it in Settings.",
+                )
+            raise HTTPException(status_code=500, detail=f"Agent Error: {str(e)}")
 
 
 @router.post("/agent/apply")
@@ -149,6 +164,7 @@ async def chat_chain(
                 "message": "Monthly token cap reached for your tier.",
                 "usage": qe.summary,
             })
+
     try:
         sheet = req.sheet or kernel.active_sheet
         history = list(req.history)

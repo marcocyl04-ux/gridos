@@ -5,7 +5,7 @@ class AnthropicProvider(Provider):
     id = "anthropic"
     display_name = "Anthropic Claude"
 
-    _MAX_TOKENS = 4096
+    _MAX_TOKENS = 8192
 
     def __init__(self, api_key: str):
         super().__init__(api_key)
@@ -17,7 +17,10 @@ class AnthropicProvider(Provider):
                 "Install it with `pip install anthropic`."
             ) from e
         self._anthropic = anthropic
-        self._client = anthropic.Anthropic(api_key=api_key)
+        self._client = anthropic.Anthropic(
+            api_key=api_key,
+            timeout=120.0,
+        )
 
     def generate(
         self,
