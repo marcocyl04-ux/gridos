@@ -923,7 +923,14 @@
                 const res = await fetch(`${API_BASE}/templates/list`);
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.detail || "Could not list templates.");
-                renderTemplates(data.templates || []);
+                // Merge JSON templates and YAML templates
+                const jsonTemplates = data.templates || [];
+                const yamlTemplates = (data.yaml_templates || []).map(t => ({
+                    ...t,
+                    cell_count: t.cell_count || 0,
+                    sheet_count: t.sheet_count || 1
+                }));
+                renderTemplates([...jsonTemplates, ...yamlTemplates]);
             } catch (e) {
                 const grid = document.getElementById("template-grid");
                 grid.innerHTML = `<div class="empty-state">Could not load templates: ${escapeHtml(e.message)}</div>`;
