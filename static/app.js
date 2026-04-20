@@ -1695,7 +1695,18 @@ function syncSendButtonState() {
 
 function toggleAssistant(force) {
     assistantOpen = typeof force === "boolean" ? force : !assistantOpen;
-    document.getElementById("assistant-panel").classList.toggle("hidden", !assistantOpen);
+    const panel = document.getElementById("assistant-panel");
+    const backdrop = document.getElementById("assistant-backdrop");
+    
+    // For mobile (narrow screens), use the slide-in panel + backdrop
+    if (window.innerWidth <= 720) {
+        panel.classList.toggle("visible", assistantOpen);
+        panel.classList.toggle("hidden", !assistantOpen);
+        if (backdrop) backdrop.classList.toggle("visible", assistantOpen);
+    } else {
+        // Desktop behavior
+        panel.classList.toggle("hidden", !assistantOpen);
+    }
 }
 
 function beginResize(kind, key, startPos) {
@@ -3760,6 +3771,23 @@ async function bootstrap() {
     document.getElementById("clear-sheet-btn").addEventListener("click", clearActiveSheet);
     document.getElementById("assistant-toggle").addEventListener("click", () => toggleAssistant());
     document.getElementById("assistant-close").addEventListener("click", () => toggleAssistant(false));
+    
+    // Backdrop click to close mobile sidebar
+    const backdrop = document.getElementById("assistant-backdrop");
+    if (backdrop) {
+        backdrop.addEventListener("click", () => toggleAssistant(false));
+    }
+    
+    // Handle window resize to ensure panel state is correct
+    window.addEventListener("resize", () => {
+        const panel = document.getElementById("assistant-panel");
+        if (window.innerWidth > 720) {
+            // Desktop: clear mobile classes
+            panel.classList.remove("visible");
+            if (backdrop) backdrop.classList.remove("visible");
+        }
+    });
+    
     document.getElementById("chat-clear")?.addEventListener("click", () => {
         clearPreview();
         clearChatConversation();
