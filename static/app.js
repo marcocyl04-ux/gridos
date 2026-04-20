@@ -1343,12 +1343,12 @@ function buildPreviewCardBody(payload, { includeActions = true, idSuffix = "card
     let actionsRow = "";
     if (includeActions) {
         actionsRow = canApply
-            ? `<div class="msg-actions">
-                <button class="primary-btn" id="apply-preview-btn">${escapeHtml(applyLabel)}</button>
-                <button class="ghost-btn" id="dismiss-preview-btn">Dismiss</button>
+            ? `<div class="msg-actions" data-preview-actions="true">
+                <button class="primary-btn" data-apply-preview="true">${escapeHtml(applyLabel)}</button>
+                <button class="ghost-btn" data-dismiss-preview="true">Dismiss</button>
             </div>`
-            : `<div class="msg-actions">
-                <button class="ghost-btn" id="dismiss-preview-btn">Dismiss</button>
+            : `<div class="msg-actions" data-preview-actions="true">
+                <button class="ghost-btn" data-dismiss-preview="true">Dismiss</button>
             </div>`;
     }
 
@@ -1393,9 +1393,9 @@ function renderPreviewAsChatMessage() {
     previewMessageEl.dataset.chatEntryId = entry.id;
 
     if (canApply) {
-        previewMessageEl.querySelector("#apply-preview-btn")?.addEventListener("click", applyPreview);
+        previewMessageEl.querySelector("[data-apply-preview]")?.addEventListener("click", applyPreview);
     }
-    previewMessageEl.querySelector("#dismiss-preview-btn")?.addEventListener("click", () => {
+    previewMessageEl.querySelector("[data-dismiss-preview]")?.addEventListener("click", () => {
         freezePreviewCard("dismissed");
         previewState = null;
         repaintPreview();
