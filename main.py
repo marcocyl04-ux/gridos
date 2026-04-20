@@ -40,6 +40,7 @@ from core.intent_parser import IntentParser, validate_with_feedback
 from core.declarative_plugins import (
     DeclarativePluginLoader,
     install_declarative_formulas,
+    render_yaml_template,
     DEFAULT_MATH_REGISTRY,
 )
 from core.import_engine import import_file, auto_detect_template
@@ -2831,6 +2832,19 @@ async def apply_template(
     template_id: str,
     k: GridOSKernel = Depends(current_kernel_dep),
 ):
+    # First check YAML templates
+    if template_id in _YAML_TEMPLATES:
+        yaml_template = _YAML_TEMPLATES[template_id]
+        try:
+            # Convert YAML template to workbook state
+            from core.declarative_plugins import render_yaml_template
+            state = render_yaml_template(yaml_template)
+            result = kernel.apply_template_respecting_locks(state)
+            return {"status": "Success", **result, "source": "yaml"}
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Could not apply YAML template: {e}")
+    
+    # Fall back to JSON templates
     path = _template_path(template_id)
     if not path.exists():
         raise HTTPException(status_code=404, detail=f"Template '{template_id}' not found.")
@@ -2839,7 +2853,7 @@ async def apply_template(
         result = kernel.apply_template_respecting_locks(payload.get("state") or {})
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Could not apply template: {e}")
-    return {"status": "Success", **result}
+    return {"status": "Success", **result, "source": "json"}
 
 
 @app.delete("/templates/{template_id}")

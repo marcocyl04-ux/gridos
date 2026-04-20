@@ -307,3 +307,43 @@ def install_declarative_formulas(loader: DeclarativePluginLoader, kernel: Any) -
         # Also register into kernel's evaluator if it has one
         if hasattr(kernel, "evaluator") and hasattr(kernel.evaluator, "register_custom"):
             kernel.evaluator.register_custom(name.upper(), fn)
+
+
+# Template rendering — convert YAML template to workbook state
+def render_yaml_template(template_data: dict) -> dict:
+    """Convert a YAML template to a GridOS workbook state.
+    
+    YAML templates have a simpler structure than full JSON templates.
+    They define cells as A1 -> {value} or A1 -> {formula} mappings.
+    """
+    cells = template_data.get("cells", {})
+    metadata = template_data.get("metadata", {})
+    
+    # Convert simple cell format to GridOS state format
+    state_cells = {}
+    for cell_ref, cell_data in cells.items():
+        if isinstance(cell_data, dict):
+            # Already in dict format
+            state_cells[cell_ref] = cell_data
+        elif isinstance(cell_data, str):
+            # String value — treat as plain value or detect formula
+            if cell_data.startswith("="):
+                state_cells[cell_ref] = {"formula": cell_data[1:], "value": None}
+            else:
+                state_cells[cell_ref] = {"value": cell_data}
+        elif isinstance(cell_data, (int, float)):
+            state_cells[cell_ref] = {"value": cell_data}
+        else:
+            state_cells[cell_ref] = {"value": str(cell_data)}
+    
+    # Build minimal state structure
+    state = {
+        "cells": state_cells,
+        "sheets": metadata.get("sheets", [{"name": "Sheet1", "active": True}]),
+        "metadata": {
+            "title": template_data.get("name", "Untitled"),
+            "description": template_data.get("description", ""),
+        }
+    }
+    
+    return state
