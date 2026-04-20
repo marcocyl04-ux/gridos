@@ -107,7 +107,7 @@ async def _security_middleware(request, call_next):
     # --- CSRF protection (double-submit cookie) ---
     if request.method not in _SAFE_METHODS:
         path = request.url.path
-        exempt_prefixes = ("/agent/chat", "/agent/apply", "/agent/write")
+        exempt_prefixes = ("/agent/chat", "/agent/apply", "/agent/write", "/agent/execute-graph")
         is_exempt = any(path.startswith(p) for p in exempt_prefixes)
         has_auth = bool(request.headers.get("authorization", "").startswith("Bearer"))
         if not is_exempt and not has_auth:
