@@ -3780,27 +3780,32 @@ async function bootstrap() {
     
     // Handle window resize - only react to crossing the 900px breakpoint
     let lastWidth = window.innerWidth;
+    let resizeTimeout = null;
     window.addEventListener("resize", () => {
-        const panel = document.getElementById("assistant-panel");
-        const backdrop = document.getElementById("assistant-backdrop");
-        const currentWidth = window.innerWidth;
-        const crossedBreakpoint = (lastWidth > 900 && currentWidth <= 900) || (lastWidth <= 900 && currentWidth > 900);
-        lastWidth = currentWidth;
-        
-        if (!crossedBreakpoint) return;
-        
-        if (currentWidth > 900) {
-            // Switched to desktop: show sidebar inline
-            panel.classList.remove("active");
-            if (backdrop) backdrop.classList.remove("active");
-            assistantOpen = true;
-            panel.classList.remove("hidden");
-        } else {
-            // Switched to mobile/half-screen: hide sidebar overlay
-            assistantOpen = false;
-            panel.classList.remove("active");
-            if (backdrop) backdrop.classList.remove("active");
-        }
+        // Debounce resize events to prevent toggle jitter
+        if (resizeTimeout) clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            const panel = document.getElementById("assistant-panel");
+            const backdrop = document.getElementById("assistant-backdrop");
+            const currentWidth = window.innerWidth;
+            const crossedBreakpoint = (lastWidth > 900 && currentWidth <= 900) || (lastWidth <= 900 && currentWidth > 900);
+            lastWidth = currentWidth;
+            
+            if (!crossedBreakpoint) return;
+            
+            if (currentWidth > 900) {
+                // Switched to desktop: show sidebar inline
+                panel.classList.remove("active");
+                if (backdrop) backdrop.classList.remove("active");
+                assistantOpen = true;
+                panel.classList.remove("hidden");
+            } else {
+                // Switched to mobile/half-screen: hide sidebar overlay
+                assistantOpen = false;
+                panel.classList.remove("active");
+                if (backdrop) backdrop.classList.remove("active");
+            }
+        }, 100); // 100ms debounce
     });
     
     // Initialize: on narrow screens, start with sidebar overlay hidden
@@ -3826,6 +3831,14 @@ async function bootstrap() {
             event.preventDefault();
             if (!event.repeat) requestPreview();
         }
+    });
+    // Fix paste in chat input - allow default browser paste
+    composerInput.addEventListener("paste", (event) => {
+        // Let browser handle paste, then update UI
+        setTimeout(() => {
+            autoGrowInput();
+            syncSendButtonState();
+        }, 0);
     });
     document.getElementById("save-btn").addEventListener("click", saveWorkbook);
     document.getElementById("load-btn").addEventListener("click", loadWorkbook);
