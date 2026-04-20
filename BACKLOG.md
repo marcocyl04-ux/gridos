@@ -26,6 +26,25 @@
 - **Next approach:** Something is blocking native tooltip rendering. Needs in-browser debugging to identify cause. Consider custom tooltip component rather than native `title` attributes for better control and styling
 - **Status:** Needs debugging session with DevTools to identify root cause
 
+## Developer Experience / Documentation
+
+### Range resolution mechanism undocumented
+- **Problem:** The `FormulaParser._parse_arg()` method in `core/engine.py` (around line 225) handles range references like `A1:A10` by resolving them to lists of values before passing to functions. This mechanism is not documented in `AI_GUIDE.md` or plugin README files.
+- **Impact:** Future formula contributors need to understand that:
+  - Range references get pre-resolved by the parser
+  - Functions receive `[range_values_list, other_args...]` not raw range strings
+  - This affects variadic functions like COUNTIF that need to handle the resolved list
+- **Action:** Document the range resolution mechanism for plugin/formula developers
+- **Status:** Needs documentation update
+
+### test_formula.py CSRF validation failures
+- **Problem:** `test_formula.py` HTTP tests fail with `{'detail': 'CSRF validation failed.'}` because the test script doesn't obtain a CSRF token before POSTing.
+- **Options:**
+  1. Exempt `/formula/evaluate` from CSRF in test configuration
+  2. Update tests to fetch CSRF token cookie first and include `X-CSRF-Token` header
+  3. Convert to unit tests (like `test_platform.py`) that don't require HTTP server
+- **Status:** Needs fix to enable automated formula testing
+
 ---
 
 ## Session History
