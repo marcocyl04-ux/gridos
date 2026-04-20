@@ -1,142 +1,75 @@
 """
-Grid routes - cell reads/writes, ranges, clearing.
+GridOS API — Grid endpoints.
+
+Handles: /grid/cell, /grid/range, /grid/clear, /grid/format
 """
 
-from fastapi import APIRouter, HTTPException, Body
-from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
+from typing import List, Optional
 
-router = APIRouter(prefix="/grid", tags=["grid"])
+from fastapi import APIRouter, Depends, HTTPException
 
-# ============ Models ============
+from core.engine import GridOSKernel
 
-class CellWriteRequest(BaseModel):
-    workbook_id: Optional[str] = None
-    sheet: Optional[str] = None
-    cell: str  # e.g., "A1"
-    value: Any
-    locked: bool = False
+from .deps import (
+    current_kernel_dep,
+    kernel,
+    CellUpdateRequest,
+    RangeUpdateRequest,
+    CellClearRequest,
+    CellFormatRequest,
+)
 
-
-class RangeWriteRequest(BaseModel):
-    workbook_id: Optional[str] = None
-    sheet: Optional[str] = None
-    start_cell: str  # e.g., "A1"
-    values: List[List[Any]]  # 2D array
-    locked: bool = False
+router = APIRouter()
 
 
-class RangeReadRequest(BaseModel):
-    workbook_id: Optional[str] = None
-    sheet: Optional[str] = None
-    range_str: str  # e.g., "A1:B10"
+@router.post("/grid/cell")
+async def update_cell(
+    req: CellUpdateRequest,
+    k: GridOSKernel = Depends(current_kernel_dep),
+):
+    try:
+        target = kernel.write_user_cell(req.cell.upper(), req.value, user_id="User", sheet_name=req.sheet)
+        return {"status": "Success", "cell": target, "sheet": req.sheet or kernel.active_sheet}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
-class ClearRequest(BaseModel):
-    workbook_id: Optional[str] = None
-    sheet: Optional[str] = None
-    range_str: Optional[str] = None  # If None, clear all
+@router.post("/grid/range")
+async def update_range(
+    req: RangeUpdateRequest,
+    k: GridOSKernel = Depends(current_kernel_dep),
+):
+    try:
+        target = kernel.write_user_range(req.target_cell.upper(), req.values, user_id="User", sheet_name=req.sheet)
+        return {"status": "Success", "target": target, "sheet": req.sheet or kernel.active_sheet}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
-class FormatRequest(BaseModel):
-    workbook_id: Optional[str] = None
-    sheet: Optional[str] = None
-    cell: str
-    format_spec: Dict[str, Any]  # { "number_format": "currency", "bold": true, ... }
+@router.post("/grid/clear")
+async def clear_cells(
+    req: CellClearRequest,
+    k: GridOSKernel = Depends(current_kernel_dep),
+):
+    if not req.cells:
+        return {"status": "Success", "cleared": 0, "skipped_locked": 0}
+    result = kernel.clear_cells(req.cells, sheet_name=req.sheet)
+    return {"status": "Success", **result, "sheet": req.sheet or kernel.active_sheet}
 
 
-# ============ Routes ============
-
-@router.post("/cell")
-async def write_cell(req: CellWriteRequest):
-    """
-    Write a single cell value.
-    
-    Example:
-    {
-        "cell": "A1",
-        "value": 100,
-        "locked": false
-    }
-    """
-    raise HTTPException(
-        status_code=501,
-        detail="Cell write not yet migrated to modular structure"
-    )
-
-
-@router.post("/range")
-async def write_range(req: RangeWriteRequest):
-    """
-    Write a rectangular range of values.
-    
-    Example:
-    {
-        "start_cell": "A1",
-        "values": [
-            ["Header1", "Header2"],
-            [100, 200],
-            [150, 250]
-        ]
-    }
-    """
-    raise HTTPException(
-        status_code=501,
-        detail="Range write not yet migrated to modular structure"
-    )
-
-
-@router.post("/read")
-async def read_range(req: RangeReadRequest):
-    """
-    Read values from a range.
-    
-    Returns:
-    {
-        "values": [["A", "B"], [1, 2]],
-        "formulas": [[null, null], [null, null]]
-    }
-    """
-    raise HTTPException(
-        status_code=501,
-        detail="Range read not yet migrated to modular structure"
-    )
-
-
-@router.post("/clear")
-async def clear_range(req: ClearRequest):
-    """
-    Clear cells in a range (or entire sheet if no range specified).
-    """
-    raise HTTPException(
-        status_code=501,
-        detail="Clear not yet migrated to modular structure"
-    )
-
-
-@router.post("/format")
-async def format_cells(req: FormatRequest):
-    """
-    Apply formatting to a cell or range.
-    
-    Supported formats:
-    - number_format: "currency", "percent", "decimal", "date"
-    - bold, italic, underline: boolean
-    - bg_color, text_color: hex color
-    - alignment: "left", "center", "right"
-    """
-    raise HTTPException(
-        status_code=501,
-        detail="Format not yet migrated to modular structure"
-    )
-
-
-@router.get("/metadata")
-async def get_grid_metadata(workbook_id: Optional[str] = None, sheet: Optional[str] = None):
-    """
-    Get metadata about the grid: dimensions, locked cells, etc.
-    """
-    raise HTTPException(
-        status_code=501,
-        detail="Metadata not yet migrated to modular structure"
-    )
+@router.post("/grid/format")
+async def set_cell_format(
+    req: CellFormatRequest,
+    k: GridOSKernel = Depends(current_kernel_dep),
+):
+    decimals = req.decimals
+    if decimals is not None:
+        if not isinstance(decimals, int) or decimals < 0 or decimals > 30:
+            raise HTTPException(status_code=400, detail="decimals must be an integer between 0 and 30, or null to reset")
+    updated = []
+    for cell_a1 in req.cells:
+        try:
+            updated.append(kernel.set_cell_format(cell_a1.upper(), decimals, sheet_name=req.sheet))
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+    return {"status": "Success", "updated": updated, "sheet": req.sheet or kernel.active_sheet}

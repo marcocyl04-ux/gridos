@@ -1,137 +1,105 @@
-"""
-Template routes - YAML financial model templates.
-"""
-
-from fastapi import APIRouter, HTTPException, Body
+"""Templates endpoints: save, list, load, apply, delete (JSON + YAML)."""
+from __future__ import annotations
+import json
+from datetime import datetime, timezone
+from typing import Optional
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from typing import Optional, Dict, Any, List
+from core.api.deps import (
+    kernel, current_kernel_dep, GridOSKernel,
+    _slugify_template_name, _template_path, _template_summary,
+    TEMPLATES_DIR, _YAML_TEMPLATES, _TEMPLATE_ID_RE,
+)
 
-router = APIRouter(prefix="/templates", tags=["templates"])
-
-# ============ Models ============
-
-class TemplateApplyRequest(BaseModel):
-    workbook_id: Optional[str] = None
-    sheet: Optional[str] = None
-    variables: Dict[str, Any] = {}
-    target_cell: str = "A1"
+router = APIRouter()
 
 
-class TemplateCreateRequest(BaseModel):
+class TemplateSaveRequest(BaseModel):
     name: str
-    description: str
-    yaml_content: str  # Raw YAML
+    description: Optional[str] = ""
 
 
-class TemplateListResponse(BaseModel):
-    id: str
-    name: str
-    description: str
-    category: str  # "financial", "sales", "custom"
-    variables: List[str]
+@router.post("/templates/save")
+async def save_template(req: TemplateSaveRequest, k: GridOSKernel = Depends(current_kernel_dep)):
+    if not req.name or not req.name.strip():
+        raise HTTPException(status_code=400, detail="Template name is required.")
+    base_slug = _slugify_template_name(req.name)
+    candidate = base_slug
+    counter = 2
+    while (TEMPLATES_DIR / f"{candidate}.json").exists():
+        candidate = f"{base_slug}-{counter}"
+        counter += 1
+    created_at = datetime.now(timezone.utc).isoformat()
+    snapshot = {
+        "id": candidate,
+        "name": req.name.strip(),
+        "description": (req.description or "").strip(),
+        "author": "You",
+        "created_at": created_at,
+        "state": kernel.export_state_dict(),
+    }
+    (TEMPLATES_DIR / f"{candidate}.json").write_text(
+        json.dumps(snapshot, indent=2), encoding="utf-8"
+    )
+    return {"status": "Success", "template": _template_summary(snapshot)}
 
 
-# ============ Routes ============
-
-@router.get("/available")
-async def list_templates(workbook_id: Optional[str] = None):
-    """
-    List all available templates.
-    
-    Returns:
-    [
+@router.get("/templates/list")
+async def list_templates():
+    templates: list[dict] = []
+    for path in sorted(TEMPLATES_DIR.glob("*.json")):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            continue
+        templates.append(_template_summary(payload))
+    templates.sort(key=lambda t: t.get("created_at") or "", reverse=True)
+    yaml_templates = [
         {
-            "id": "dcf_valuation",
-            "name": "DCF Valuation",
-            "description": "Discounted Cash Flow model",
-            "category": "financial",
-            "variables": ["growth_rate", "discount_rate", "terminal_growth"]
-        },
-        ...
+            "id": tid,
+            "name": t.get("name", tid),
+            "description": t.get("description", ""),
+            "category": t.get("category", ""),
+        }
+        for tid, t in _YAML_TEMPLATES.items()
     ]
-    """
-    raise HTTPException(
-        status_code=501,
-        detail="List templates not yet migrated to modular structure"
-    )
+    return {"templates": templates, "yaml_templates": yaml_templates}
 
 
-@router.post("/apply/{template_id}")
-async def apply_template(
-    template_id: str,
-    req: TemplateApplyRequest
-):
-    """
-    Apply a template to the current workbook.
-    
-    Example:
-    POST /templates/apply/dcf_valuation
-    {
-        "variables": {
-            "growth_rate": 0.05,
-            "discount_rate": 0.10,
-            "terminal_growth": 0.03
-        },
-        "target_cell": "A1"
-    }
-    
-    Returns populated workbook with all cells, formulas, and formatting.
-    """
-    raise HTTPException(
-        status_code=501,
-        detail="Apply template not yet migrated to modular structure"
-    )
+@router.get("/templates/load/{template_id}")
+async def load_template(template_id: str):
+    path = _template_path(template_id)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail=f"Template '{template_id}' not found.")
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
-@router.get("/{template_id}")
-async def get_template(template_id: str):
-    """
-    Get template details including the YAML schema.
-    """
-    raise HTTPException(
-        status_code=501,
-        detail="Get template not yet migrated to modular structure"
-    )
+@router.post("/templates/apply/{template_id}")
+async def apply_template(template_id: str, k: GridOSKernel = Depends(current_kernel_dep)):
+    if template_id in _YAML_TEMPLATES:
+        yaml_template = _YAML_TEMPLATES[template_id]
+        try:
+            from core.declarative_plugins import render_yaml_template
+            state = render_yaml_template(yaml_template)
+            result = kernel.apply_template_respecting_locks(state)
+            return {"status": "Success", **result, "source": "yaml"}
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Could not apply YAML template: {e}")
+    path = _template_path(template_id)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail=f"Template '{template_id}' not found.")
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    try:
+        result = kernel.apply_template_respecting_locks(payload.get("state") or {})
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Could not apply template: {e}")
+    return {"status": "Success", **result, "source": "json"}
 
 
-@router.post("/create")
-async def create_custom_template(req: TemplateCreateRequest):
-    """
-    Create a new custom template from YAML.
-    
-    Templates are stored in assets/templates/ and can be applied like built-ins.
-    """
-    raise HTTPException(
-        status_code=501,
-        detail="Create template not yet migrated to modular structure"
-    )
-
-
-@router.post("/{template_id}/clone")
-async def clone_template(template_id: str, new_name: str):
-    """
-    Clone an existing template with a new name.
-    """
-    raise HTTPException(
-        status_code=501,
-        detail="Clone template not yet migrated to modular structure"
-    )
-
-
-@router.get("/categories")
-async def get_template_categories():
-    """
-    Get available template categories and descriptions.
-    
-    Returns:
-    {
-        "financial": "Financial modeling (DCF, LBO, Comps)",
-        "sales": "Sales forecasting and pipeline",
-        "operations": "Operations and capacity planning",
-        "custom": "User-created templates"
-    }
-    """
-    raise HTTPException(
-        status_code=501,
-        detail="Categories not yet migrated to modular structure"
-    )
+@router.delete("/templates/{template_id}")
+async def delete_template(template_id: str):
+    path = _template_path(template_id)
+    if not path.exists():
+        raise HTTPException(status_code=404, detail=f"Template '{template_id}' not found.")
+    path.unlink()
+    return {"status": "Success"}
