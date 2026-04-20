@@ -309,26 +309,38 @@ def install_declarative_formulas(loader: DeclarativePluginLoader, kernel: Any) -
             kernel.evaluator.register_custom(name.upper(), fn)
 
 
-# Template rendering — convert YAML template to workbook state
+# Template rendering — convert YAML template to GridOS workbook state
 def render_yaml_template(template_data: dict) -> dict:
     """Convert a YAML template to a GridOS workbook state.
     
     YAML templates have a simpler structure than full JSON templates.
     They define cells as A1 -> {value} or A1 -> {formula} mappings.
+    
+    Returns structure compatible with apply_template_respecting_locks:
+    {
+        "sheets": {"Sheet1": {"cells": {...}, "charts": []}},
+        "active_sheet": "Sheet1"
+    }
     """
     cells = template_data.get("cells", {})
-    metadata = template_data.get("metadata", {})
     
-    # Convert simple cell format to GridOS state format
+    # Convert simple cell format to GridOS cell state format
     state_cells = {}
     for cell_ref, cell_data in cells.items():
         if isinstance(cell_data, dict):
-            # Already in dict format
-            state_cells[cell_ref] = cell_data
+            # Dict format with value/formula/style
+            cell_state = {}
+            if "formula" in cell_data:
+                cell_state["formula"] = cell_data["formula"]
+            if "value" in cell_data:
+                cell_state["value"] = cell_data["value"]
+            if "style" in cell_data:
+                cell_state["style"] = cell_data["style"]
+            state_cells[cell_ref] = cell_state
         elif isinstance(cell_data, str):
             # String value — treat as plain value or detect formula
             if cell_data.startswith("="):
-                state_cells[cell_ref] = {"formula": cell_data[1:], "value": None}
+                state_cells[cell_ref] = {"formula": cell_data[1:]}
             else:
                 state_cells[cell_ref] = {"value": cell_data}
         elif isinstance(cell_data, (int, float)):
@@ -336,14 +348,15 @@ def render_yaml_template(template_data: dict) -> dict:
         else:
             state_cells[cell_ref] = {"value": str(cell_data)}
     
-    # Build minimal state structure
+    # Build template structure expected by apply_template_respecting_locks
     state = {
-        "cells": state_cells,
-        "sheets": metadata.get("sheets", [{"name": "Sheet1", "active": True}]),
-        "metadata": {
-            "title": template_data.get("name", "Untitled"),
-            "description": template_data.get("description", ""),
-        }
+        "sheets": {
+            "Sheet1": {
+                "cells": state_cells,
+                "charts": []
+            }
+        },
+        "active_sheet": "Sheet1"
     }
     
     return state
