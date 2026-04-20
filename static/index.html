@@ -2091,6 +2091,9 @@
             .assistant.visible {
                 transform: translateX(0);
             }
+            .assistant.active {
+                transform: translateX(0);
+            }
             .assistant-backdrop {
                 display: none;
                 position: fixed;
@@ -2102,6 +2105,11 @@
                 pointer-events: none;
             }
             .assistant-backdrop.visible {
+                display: block;
+                opacity: 1;
+                pointer-events: auto;
+            }
+            .assistant-backdrop.active {
                 display: block;
                 opacity: 1;
                 pointer-events: auto;

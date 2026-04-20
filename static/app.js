@@ -1700,9 +1700,9 @@ function toggleAssistant(force) {
     
     // For half-screen/mobile (narrow screens), use the slide-in panel + backdrop
     if (window.innerWidth <= 900) {
-        panel.classList.toggle("visible", assistantOpen);
-        panel.classList.toggle("hidden", !assistantOpen);
-        if (backdrop) backdrop.classList.toggle("visible", assistantOpen);
+        // Use 'active' class for mobile overlay mode
+        panel.classList.toggle("active", assistantOpen);
+        if (backdrop) backdrop.classList.toggle("active", assistantOpen);
     } else {
         // Desktop wide: inline sidebar behavior
         panel.classList.toggle("hidden", !assistantOpen);
@@ -3778,30 +3778,36 @@ async function bootstrap() {
         backdrop.addEventListener("click", () => toggleAssistant(false));
     }
     
-    // Handle window resize to ensure panel state is correct
+    // Handle window resize - only react to crossing the 900px breakpoint
+    let lastWidth = window.innerWidth;
     window.addEventListener("resize", () => {
         const panel = document.getElementById("assistant-panel");
         const backdrop = document.getElementById("assistant-backdrop");
-        if (window.innerWidth > 900) {
-            // Desktop wide: sidebar always visible inline
-            panel.classList.remove("visible");
-            if (backdrop) backdrop.classList.remove("visible");
+        const currentWidth = window.innerWidth;
+        const crossedBreakpoint = (lastWidth > 900 && currentWidth <= 900) || (lastWidth <= 900 && currentWidth > 900);
+        lastWidth = currentWidth;
+        
+        if (!crossedBreakpoint) return;
+        
+        if (currentWidth > 900) {
+            // Switched to desktop: show sidebar inline
+            panel.classList.remove("active");
+            if (backdrop) backdrop.classList.remove("active");
             assistantOpen = true;
             panel.classList.remove("hidden");
         } else {
-            // Half-screen/mobile: sidebar starts hidden
-            if (assistantOpen && !panel.classList.contains("visible")) {
-                toggleAssistant(false);
-            }
+            // Switched to mobile/half-screen: hide sidebar overlay
+            assistantOpen = false;
+            panel.classList.remove("active");
+            if (backdrop) backdrop.classList.remove("active");
         }
     });
     
-    // Initialize: on narrow screens, start with sidebar hidden
+    // Initialize: on narrow screens, start with sidebar overlay hidden
     if (window.innerWidth <= 900) {
         const panel = document.getElementById("assistant-panel");
         assistantOpen = false;
-        panel.classList.add("hidden");
-        panel.classList.remove("visible");
+        panel.classList.remove("active");
     }
     
     document.getElementById("chat-clear")?.addEventListener("click", () => {
