@@ -467,6 +467,24 @@
 
     <!-- Main content -->
     <div class="main">
+        <!-- API Keys Configuration -->
+        <div id="api-keys-section" class="hero" style="background: linear-gradient(135deg, #fef3e6, #fff8f0); border-color: #f9ab00;">
+            <h2 style="color: #b06000;">⚠️ LLM API Key Required</h2>
+            <p style="color: #b06000;">AI features are disabled until you configure an API key. Add your OpenAI, Anthropic, Google, or Groq key below.</p>
+            <div class="hero-input-wrap" style="max-width: 500px;">
+                <select id="api-provider" style="width: 100%; height: 44px; padding: 0 16px; border: 2px solid #f9ab00; border-radius: 8px; font-size: 14px; margin-bottom: 12px; background: white;">
+                    <option value="">Select provider...</option>
+                    <option value="openai">OpenAI</option>
+                    <option value="anthropic">Anthropic (Claude)</option>
+                    <option value="gemini">Google (Gemini)</option>
+                    <option value="groq">Groq</option>
+                </select>
+                <input type="password" id="api-key-input" placeholder="Paste your API key here..." style="width: 100%; height: 44px; padding: 0 16px; border: 2px solid #f9ab00; border-radius: 8px; font-size: 14px; margin-bottom: 12px;" />
+                <button id="save-api-key" style="width: 100%; height: 44px; background: #1a73e8; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">Save API Key</button>
+            </div>
+            <p style="font-size: 12px; color: #80868b; margin-top: 12px;">Your key is stored encrypted and never shared.</p>
+        </div>
+
         <!-- Hero prompt -->
         <div class="hero">
             <h2>What would you like to build?</h2>
@@ -588,6 +606,43 @@
                 return d.toLocaleDateString();
             } catch { return ""; }
         }
+
+        // ===== API Key Configuration =====
+        document.getElementById("save-api-key")?.addEventListener("click", async () => {
+            const provider = document.getElementById("api-provider").value;
+            const key = document.getElementById("api-key-input").value.trim();
+            
+            if (!provider || !key) {
+                showError("Please select a provider and enter an API key");
+                return;
+            }
+            
+            showLoading("Saving API key...");
+            try {
+                const res = await fetch(`${API_BASE}/settings/keys/save`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ provider_id: provider, api_key: key }),
+                });
+                
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.detail || "Failed to save key");
+                }
+                
+                showSuccess("API key saved successfully!");
+                document.getElementById("api-key-input").value = "";
+                
+                // Hide the API keys section if configured
+                setTimeout(() => {
+                    document.getElementById("api-keys-section").style.display = "none";
+                }, 2000);
+                
+            } catch (e) {
+                hideLoading();
+                showError(`Error: ${e.message}`);
+            }
+        });
 
         // ===== Hero Prompt =====
         const heroInput = document.getElementById("hero-prompt-input");
@@ -757,7 +812,16 @@
             try {
                 const res = await fetch(`${API_BASE}/templates/list`);
                 const data = await res.json();
-                allTemplates = data.templates || [];
+                
+                // Combine JSON templates and YAML templates
+                const jsonTemplates = data.templates || [];
+                const yamlTemplates = (data.yaml_templates || []).map(t => ({
+                    ...t,
+                    category: t.category || 'custom',
+                    cell_count: t.cell_count || 0
+                }));
+                
+                allTemplates = [...jsonTemplates, ...yamlTemplates];
                 
                 renderTemplates(allTemplates);
                 return;
